@@ -6,11 +6,17 @@ public class StringResponseHandler extends AsyncHttpResponseHandler
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
-		try
+		if (chunk != null)
 		{
-			stringBuffer.append(new String(chunk, 0, chunkLength, "UTF-8"));
+			try
+			{
+				stringBuffer.append(new String(chunk, 0, chunkLength, "UTF-8"));
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
 		}
-		catch (Exception e){}
 	}
 
 	/**

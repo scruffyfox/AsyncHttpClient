@@ -769,7 +769,7 @@ public class AsyncHttpClient
 		}
 	}
 
-	private class ClientExecutorTask extends AsyncTask<Void, Packet, byte[]>
+	private class ClientExecutorTask extends AsyncTask<Void, Packet, Void>
 	{
 		private static final int BUFFER_SIZE = 8192;
 
@@ -799,7 +799,7 @@ public class AsyncHttpClient
 			}
 		}
 
-		@Override protected byte[] doInBackground(Void... params)
+		@Override protected Void doInBackground(Void... params)
 		{
 			try
 			{
@@ -884,8 +884,8 @@ public class AsyncHttpClient
 					{
 						if (this.response != null)
 						{
-							this.response.onPublishedUploadProgress(buffer, writeCount, contentLength);
-							this.response.onPublishedUploadProgress(buffer, writeCount, len, contentLength);
+							this.response.onPublishedUploadProgress(buffer, len, contentLength);
+							this.response.onPublishedUploadProgress(buffer, len, writeCount, contentLength);
 
 							publishProgress(new Packet(writeCount, contentLength, false));
 						}
@@ -939,8 +939,8 @@ public class AsyncHttpClient
 				{
 					if (this.response != null)
 					{
-						this.response.onPublishedDownloadProgress(buffer, readCount, conn.getContentLength());
-						this.response.onPublishedDownloadProgress(buffer, readCount, len, conn.getContentLength());
+						this.response.onPublishedDownloadProgress(buffer, len, conn.getContentLength());
+						this.response.onPublishedDownloadProgress(buffer, len, readCount, conn.getContentLength());
 
 						publishProgress(new Packet(readCount, conn.getContentLength(), true));
 					}
@@ -951,10 +951,7 @@ public class AsyncHttpClient
 				if (this.response != null)
 				{
 					this.response.getConnectionInfo().responseLength = readCount;
-				}
 
-				if (this.response != null)
-				{
 					// we fake the content length, because it can be -1
 					this.response.onPublishedDownloadProgress(null, readCount, readCount);
 					this.response.onPublishedDownloadProgress(null, readCount, readCount, readCount);
@@ -1004,7 +1001,7 @@ public class AsyncHttpClient
 			}
 		}
 
-		@Override protected void onPostExecute(byte[] result)
+		@Override protected void onPostExecute(Void result)
 		{
 			super.onPostExecute(result);
 

@@ -8,7 +8,10 @@ public class BinaryResponseHandler extends AsyncHttpResponseHandler
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
-		byteBuffer.write(chunk, 0, chunkLength);
+		if (chunk != null)
+		{
+			byteBuffer.write(chunk, 0, chunkLength);
+		}
 	}
 
 	/**
