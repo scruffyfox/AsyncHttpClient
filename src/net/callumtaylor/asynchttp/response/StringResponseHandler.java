@@ -1,7 +1,5 @@
 package net.callumtaylor.asynchttp.response;
 
-
-
 public class StringResponseHandler extends AsyncHttpResponseHandler
 {
 	StringBuffer stringBuffer = new StringBuffer();

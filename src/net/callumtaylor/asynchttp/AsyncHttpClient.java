@@ -45,9 +45,9 @@ import android.os.Build;
  *
  * client.get(&quot;api/v1/&quot;, params, headers, new JsonResponseHandler()
  * {
- * 	&#064;Override public JsonElement onSuccess(byte[] response)
+ * 	&#064;Override public JsonElement onSuccess()
  * 	{
- * 		JsonElement result = super.onSuccess(response);
+ * 		JsonElement result = super.onSuccess();
  * 		return null;
  * 	}
  * });
@@ -65,9 +65,9 @@ import android.os.Build;
  *
  * client.delete(&quot;api/v1/&quot;, params, headers, new JsonResponseHandler()
  * {
- * 	&#064;Override public JsonElement onSuccess(byte[] response)
+ * 	&#064;Override public JsonElement onSuccess()
  * 	{
- * 		JsonElement result = super.onSuccess(response);
+ * 		JsonElement result = super.onSuccess();
  * 		return null;
  * 	}
  * });
@@ -88,9 +88,9 @@ import android.os.Build;
  *
  * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
  * {
- * 	&#064;Override public JsonElement onSuccess(byte[] response)
+ * 	&#064;Override public JsonElement onSuccess()
  * 	{
- * 		JsonElement result = super.onSuccess(response);
+ * 		JsonElement result = super.onSuccess();
  * 		return null;
  * 	}
  * });
@@ -114,9 +114,9 @@ import android.os.Build;
  *
  * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
  * {
- * 	&#064;Override public JsonElement onSuccess(byte[] response)
+ * 	&#064;Override public JsonElement onSuccess()
  * 	{
- * 		JsonElement result = super.onSuccess(response);
+ * 		JsonElement result = super.onSuccess();
  * 		return null;
  * 	}
  * });
@@ -137,9 +137,9 @@ import android.os.Build;
  *
  * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
  * {
- * 	&#064;Override public JsonElement onSuccess(byte[] response)
+ * 	&#064;Override public JsonElement onSuccess()
  * 	{
- * 		JsonElement result = super.onSuccess(response);
+ * 		JsonElement result = super.onSuccess();
  * 		return null;
  * 	}
  * });
@@ -773,11 +773,11 @@ public class AsyncHttpClient
 	{
 		private static final int BUFFER_SIZE = 8192;
 
-		private AsyncHttpResponseHandler response;
-		private Uri requestUri;
-		private List<Header> requestHeaders;
-		private HttpEntity postData;
-		private RequestMode requestMode;
+		private final AsyncHttpResponseHandler response;
+		private final Uri requestUri;
+		private final List<Header> requestHeaders;
+		private final HttpEntity postData;
+		private final RequestMode requestMode;
 
 		public ClientExecutorTask(RequestMode mode, Uri request, List<Header> headers, HttpEntity postData, AsyncHttpResponseHandler response)
 		{

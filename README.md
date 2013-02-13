@@ -24,9 +24,9 @@ In order to download large files, you will need to subclass `AsyncHttpResponseHa
 	
 	client.get("api/v1/", params, headers, new JsonResponseHandler()
 	{
-		@Override public JsonElement onSuccess(byte[] response)
+		@Override public JsonElement onSuccess()
 		{
-			JsonElement result = super.onSuccess(response);
+			JsonElement result = super.onSuccess();
 			return null;
 		}
 	});
@@ -44,9 +44,9 @@ In order to download large files, you will need to subclass `AsyncHttpResponseHa
 	
 	client.delete("api/v1/", params, headers, new JsonResponseHandler()
 	{
-		@Override public JsonElement onSuccess(byte[] response)
+		@Override public JsonElement onSuccess()
 		{
-			JsonElement result = super.onSuccess(response);
+			JsonElement result = super.onSuccess();
 			return null;
 		}
 	});
@@ -67,9 +67,9 @@ In order to download large files, you will need to subclass `AsyncHttpResponseHa
 	
 	client.post("api/v1/", params, entity, headers, new JsonResponseHandler()
 	{
-		@Override public JsonElement onSuccess(byte[] response)
+		@Override public JsonElement onSuccess()
 		{
-			JsonElement result = super.onSuccess(response);
+			JsonElement result = super.onSuccess();
 			return null;
 		}
 	});
@@ -93,9 +93,9 @@ In order to download large files, you will need to subclass `AsyncHttpResponseHa
 	
 	client.post("api/v1/", params, entity, headers, new JsonResponseHandler()
 	{
-		@Override public JsonElement onSuccess(byte[] response)
+		@Override public JsonElement onSuccess()
 		{
-			JsonElement result = super.onSuccess(response);
+			JsonElement result = super.onSuccess();
 			return null;
 		}
 	});
@@ -116,9 +116,9 @@ In order to download large files, you will need to subclass `AsyncHttpResponseHa
 	
 	client.post("api/v1/", params, entity, headers, new JsonResponseHandler()
 	{
-		@Override public JsonElement onSuccess(byte[] response)
+		@Override public JsonElement onSuccess()
 		{
-			JsonElement result = super.onSuccess(response);
+			JsonElement result = super.onSuccess();
 			return null;
 		}
 	});
