@@ -6,10 +6,20 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
 import net.callumtaylor.asynchttp.response.AsyncHttpResponseHandler;
@@ -22,6 +32,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.AsyncTask.Status;
 import android.os.Build;
+import android.text.TextUtils;
 
 /**
  * The client class used for initiating HTTP requests using an AsyncTask. It
@@ -293,7 +304,11 @@ public class AsyncHttpClient
 	 */
 	public void get(String path, List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
 	{
-		requestUri = Uri.withAppendedPath(requestUri, path);
+		if (!TextUtils.isEmpty(path))
+		{
+			requestUri = Uri.withAppendedPath(requestUri, path);
+		}
+
 		requestUri = appendParams(requestUri, params);
 		executeTask(RequestMode.GET, requestUri, headers, null, response);
 	}
@@ -358,7 +373,11 @@ public class AsyncHttpClient
 	 */
 	public void delete(String path, List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
 	{
-		requestUri = Uri.withAppendedPath(requestUri, path);
+		if (!TextUtils.isEmpty(path))
+		{
+			requestUri = Uri.withAppendedPath(requestUri, path);
+		}
+
 		requestUri = appendParams(requestUri, params);
 		executeTask(RequestMode.DELETE, requestUri, headers, null, response);
 	}
@@ -381,7 +400,6 @@ public class AsyncHttpClient
 	{
 		post(path, null, null, null, response);
 	}
-
 
 	/**
 	 * Performs a POST request on the baseUri
@@ -505,7 +523,11 @@ public class AsyncHttpClient
 	 */
 	public void post(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
 	{
-		requestUri = Uri.withAppendedPath(requestUri, path);
+		if (!TextUtils.isEmpty(path))
+		{
+			requestUri = Uri.withAppendedPath(requestUri, path);
+		}
+
 		requestUri = appendParams(requestUri, params);
 		executeTask(RequestMode.POST, requestUri, headers, postData, response);
 	}
@@ -650,7 +672,11 @@ public class AsyncHttpClient
 	 */
 	public void put(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
 	{
-		requestUri = Uri.withAppendedPath(requestUri, path);
+		if (!TextUtils.isEmpty(path))
+		{
+			requestUri = Uri.withAppendedPath(requestUri, path);
+		}
+
 		requestUri = appendParams(requestUri, params);
 		executeTask(RequestMode.PUT, requestUri, headers, postData, response);
 	}
@@ -701,13 +727,16 @@ public class AsyncHttpClient
 	{
 		try
 		{
-			Uri.Builder builder = uri.buildUpon();
-			for (NameValuePair p : params)
+			if (params != null)
 			{
-				builder.appendQueryParameter(p.getName(), p.getValue());
-			}
+				Uri.Builder builder = uri.buildUpon();
+				for (NameValuePair p : params)
+				{
+					builder.appendQueryParameter(p.getName(), p.getValue());
+				}
 
-			return builder.build();
+				return builder.build();
+			}
 		}
 		catch (Exception e){}
 
@@ -804,6 +833,7 @@ public class AsyncHttpClient
 			try
 			{
 				URL url = new URL(requestUri.toString());
+				this.response.getConnectionInfo().connectionUrl = requestUri.toString();
 
 				if (Build.VERSION.SDK_INT < Build.VERSION_CODES.FROYO)
 				{
@@ -965,6 +995,7 @@ public class AsyncHttpClient
 
 				if (this.response != null)
 				{
+					this.response.getConnectionInfo().responseTime = System.currentTimeMillis();
 					this.response.getConnectionInfo().responseCode = responseCode;
 					if (this.response.getConnectionInfo().responseCode / 100 == 2)
 					{
@@ -1007,12 +1038,76 @@ public class AsyncHttpClient
 
 			if (this.response != null)
 			{
-				this.response.getConnectionInfo().responseTime = System.currentTimeMillis();
 				this.response.beforeCallback();
 
 				this.response.beforeFinish();
 				this.response.onFinish();
 			}
+		}
+	}
+
+	/**
+	 * You can use this class to allow untrusted SSL sites
+	 */
+	public static class TrustManagerManipulator implements X509TrustManager
+	{
+		private static TrustManager[] trustManagers;
+		private static final X509Certificate[] acceptedIssuers = new X509Certificate[]{};
+
+		public boolean isClientTrusted(X509Certificate[] chain)
+		{
+			return true;
+		}
+
+		public boolean isServerTrusted(X509Certificate[] chain)
+		{
+			return true;
+		}
+
+		public static void allowAllSSL()
+		{
+			HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier()
+			{
+				@Override public boolean verify(String hostname, SSLSession session)
+				{
+					return true;
+				}
+			});
+
+			SSLContext context = null;
+
+			if (trustManagers == null)
+			{
+				trustManagers = new TrustManager[]{new TrustManagerManipulator()};
+			}
+			try
+			{
+				context = SSLContext.getInstance("TLS");
+				context.init(null, trustManagers, new SecureRandom());
+			}
+			catch (NoSuchAlgorithmException e)
+			{
+				e.printStackTrace();
+			}
+			catch (KeyManagementException e)
+			{
+				e.printStackTrace();
+			}
+
+			HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
+		}
+
+		@Override public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException
+		{
+		}
+
+		@Override public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException
+		{
+		}
+
+		@Override public X509Certificate[] getAcceptedIssuers()
+		{
+			return acceptedIssuers;
 		}
 	}
 }

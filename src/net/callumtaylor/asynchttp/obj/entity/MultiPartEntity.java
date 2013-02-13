@@ -3,9 +3,6 @@ package net.callumtaylor.asynchttp.obj.entity;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,9 +26,9 @@ public class MultiPartEntity implements HttpEntity
 
 	private String boundary = null;
 
-	private ByteArrayOutputStream out = new ByteArrayOutputStream();
-	private boolean isSetLast = false;
-	private boolean isSetFirst = false;
+	private final ByteArrayOutputStream out = new ByteArrayOutputStream();
+	private final boolean isSetLast = false;
+	private final boolean isSetFirst = false;
 
 	public MultiPartEntity()
 	{
@@ -43,42 +40,16 @@ public class MultiPartEntity implements HttpEntity
 		}
 
 		this.boundary = "AsyncHttpClient-callumtaylor.net-" + buf.toString();
-	}
-
-	private void writeFirstBoundaryIfNeeds()
-	{
-		if (!isSetFirst)
-		{
-			try
-			{
-				out.write(("--" + boundary + "\r\n").getBytes());
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace();
-			}
-		}
-
-		isSetFirst = true;
-	}
-
-	private void writeLastBoundaryIfNeeds()
-	{
-		if (isSetLast)
-		{
-			return;
-		}
 
 		try
 		{
-			out.write(("\r\n--" + boundary + "--\r\n").getBytes());
+			StringBuffer res = new StringBuffer("\r\n").append("--").append(boundary).append("\r\n");
+			out.write(res.toString().getBytes());
 		}
-		catch (IOException e)
+		catch (Exception e)
 		{
-			e.printStackTrace();
-		}
 
-		isSetLast = true;
+		}
 	}
 
 	/**
@@ -89,7 +60,6 @@ public class MultiPartEntity implements HttpEntity
 	 */
 	public void addPart(String key, String value)
 	{
-		writeFirstBoundaryIfNeeds();
 		try
 		{
 			out.write(("Content-Disposition: form-data; name=\"" + key + "\"\r\n\r\n").getBytes());
@@ -113,7 +83,6 @@ public class MultiPartEntity implements HttpEntity
 	 */
 	public void addPart(String key, HttpEntity value)
 	{
-		writeFirstBoundaryIfNeeds();
 		try
 		{
 			out.write(("Content-Disposition: form-data; name=\"" + key + "\"\r\n\r\n").getBytes());
@@ -144,11 +113,15 @@ public class MultiPartEntity implements HttpEntity
 	 */
 	public void addFilePart(String key, HttpEntity value)
 	{
-		writeFirstBoundaryIfNeeds();
 		try
 		{
-			String type = "Content-Type: " + value.getContentType().getValue() + "\r\n";
-			out.write(("Content-Disposition: form-data; name=\"" + key + "\"; filename=\"" + key + "\"\r\n").getBytes());
+			StringBuffer fileRes = new StringBuffer();
+			fileRes.append("Content-Disposition: form-data; name=\"").append(key)
+					.append("\"; filename=\"").append("untitled").append("\"\r\n")
+					.append("Content-Type: ").append(value.getContentType().getValue()).append("\r\n\r\n");
+
+			out.write(fileRes.toString().getBytes());
+
 			BufferedInputStream stream = new BufferedInputStream(value.getContent(), 8192);
 			byte[] buffer = new byte[8192];
 			int len = 0;
@@ -168,94 +141,35 @@ public class MultiPartEntity implements HttpEntity
 	}
 
 	/**
-	 * Adds a new part to the entity from a file
-	 *
-	 * @param key
-	 *            The key to add
-	 * @param fileName
-	 *            The request filename
-	 * @param fin
-	 *            The file's input stream
-	 * @param isLast
-	 *            If this is the last added part
-	 */
-	public void addPart(String key, String fileName, InputStream fin, boolean isLast)
-	{
-		addPart(key, fileName, fin, "application/octet-stream", isLast);
-	}
-
-	/**
-	 * Adds a new part to the entity from a file
-	 *
-	 * @param key
-	 *            The key to add
-	 * @param fileName
-	 *            The request filename
-	 * @param fin
-	 *            The file's input stream
-	 * @param Type
-	 *            The type of file which is being added
-	 * @param isLast
-	 *            If this is the last added part
-	 */
-	public void addPart(String key, String fileName, InputStream fin, String type, boolean isLast)
-	{
-		writeFirstBoundaryIfNeeds();
-		try
-		{
-			type = "Content-Type: " + type + "\r\n";
-			out.write(("Content-Disposition: form-data; name=\"" + key + "\"; filename=\"" + fileName + "\"\r\n").getBytes());
-			out.write(type.getBytes());
-			out.write("Content-Transfer-Encoding: binary\r\n\r\n".getBytes());
-
-			byte[] tmp = new byte[8192];
-			int len = 0;
-			while ((len = fin.read(tmp)) != -1)
-			{
-				out.write(tmp, 0, len);
-			}
-
-			if (!isLast)
-			{
-				out.write(("\r\n--" + boundary + "\r\n").getBytes());
-			}
-
-			out.flush();
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-		finally
-		{
-			try
-			{
-				fin.close();
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace();
-			}
-		}
-	}
-
-	/**
-	 * Adds a new part to the entity from a file
+	 * Adds a new file based {@link HttpEntity} to the entity.
 	 *
 	 * @param key
 	 *            The key to add
 	 * @param value
-	 *            The file object to add to the entity
-	 * @param isLast
-	 *            If this is the last added part
+	 *            The {@link HttpEntity} part to add
 	 */
-	public void addPart(String key, File value, boolean isLast)
+	public void addFilePart(String key, String filename, HttpEntity value)
 	{
 		try
 		{
-			addPart(key, value.getName(), new FileInputStream(value), isLast);
+			StringBuffer fileRes = new StringBuffer();
+			fileRes.append("Content-Disposition: form-data; name=\"").append(key)
+					.append("\"; filename=\"").append(filename).append("\"\r\n")
+					.append("Content-Type: ").append(value.getContentType().getValue()).append("\r\n\r\n");
+
+			out.write(fileRes.toString().getBytes());
+			BufferedInputStream stream = new BufferedInputStream(value.getContent(), 8192);
+			byte[] buffer = new byte[8192];
+			int len = 0;
+
+			while ((len = stream.read(buffer)) > -1)
+			{
+				out.write(buffer, 0, len);
+			}
+
+			out.write(("\r\n--" + boundary + "--\r\n").getBytes());
 		}
-		catch (FileNotFoundException e)
+		catch (IOException e)
 		{
 			e.printStackTrace();
 		}
@@ -263,7 +177,6 @@ public class MultiPartEntity implements HttpEntity
 
 	@Override public long getContentLength()
 	{
-		writeLastBoundaryIfNeeds();
 		return out.size();
 	}
 
