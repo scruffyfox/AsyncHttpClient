@@ -1,2 +1,4 @@
 .project
 proguard-project.txt
+/bin
+/gen
