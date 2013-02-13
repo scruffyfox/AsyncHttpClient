@@ -4,6 +4,8 @@ This is the new and improved version of AsyncHttpClient taken from X-Library. It
 
 In this version it allows a more flexible usage of posting files, http entitys and GZIP handling.
 
+Read the full documentation [http://scruffyfox.github.com/AsyncHttpClient](http://scruffyfox.github.com/AsyncHttpClient)
+
 #Usage example
 
 ##Example GET
