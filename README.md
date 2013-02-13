@@ -2,9 +2,13 @@
 
 This is the new and improved version of AsyncHttpClient taken from X-Library. It was long due a re-write.
 
-In this version it allows a more flexible usage of posting files, http entitys and GZIP handling.
+In this version it allows a more flexible usage of posting files, http entities and GZIP handling.
 
 Read the full documentation [http://scruffyfox.github.com/AsyncHttpClient](http://scruffyfox.github.com/AsyncHttpClient)
+
+#Downloading large files
+
+In order to download large files, you will need to subclass `AsyncHttpResponseHandler` and override the `onPublishedDownloadProgress()` method to write directly to cache instead of appending to a `ByteArrayOutputStream` which is what the standard `BinaryResponseHandler` does. This is to stop OOM due to a over-sized output stream.
 
 #Usage example
 
@@ -37,7 +41,7 @@ Read the full documentation [http://scruffyfox.github.com/AsyncHttpClient](http:
 	
 	List<Header> headers = new ArrayList<Header>();
 	headers.add(new BasicHeader("1", "2"));
-	dl
+	
 	client.delete("api/v1/", params, headers, new JsonResponseHandler()
 	{
 		@Override public JsonElement onSuccess(byte[] response)

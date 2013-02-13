@@ -2,7 +2,6 @@ package net.callumtaylor.asynchttp;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -756,7 +755,21 @@ public class AsyncHttpClient
 		executorTask.execute();
 	}
 
-	private class ClientExecutorTask extends AsyncTask<Void, Void, byte[]>
+	private static class Packet
+	{
+		long length;
+		long total;
+		boolean isDownload;
+
+		public Packet(long length, long total, boolean isDownload)
+		{
+			this.length = length;
+			this.total = total;
+			this.isDownload = isDownload;
+		}
+	}
+
+	private class ClientExecutorTask extends AsyncTask<Void, Packet, byte[]>
 	{
 		private static final int BUFFER_SIZE = 8192;
 
@@ -872,11 +885,18 @@ public class AsyncHttpClient
 						if (this.response != null)
 						{
 							this.response.onPublishedUploadProgress(buffer, writeCount, contentLength);
-							this.response.onPublishedUploadProgress(buffer, writeCount, contentLength, len);
+							this.response.onPublishedUploadProgress(buffer, writeCount, len, contentLength);
+
+							publishProgress(new Packet(writeCount, contentLength, false));
 						}
 
 						wr.write(buffer, 0, len);
 						writeCount += len;
+					}
+
+					if (this.response != null)
+					{
+						publishProgress(new Packet(writeCount, contentLength, false));
 					}
 
 					wr.flush();
@@ -911,7 +931,6 @@ public class AsyncHttpClient
 				}
 
 				InputStream is = new BufferedInputStream(i, BUFFER_SIZE);
-				ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
 				byte[] buffer = new byte[BUFFER_SIZE];
 
 				int len = 0;
@@ -921,10 +940,11 @@ public class AsyncHttpClient
 					if (this.response != null)
 					{
 						this.response.onPublishedDownloadProgress(buffer, readCount, conn.getContentLength());
-						this.response.onPublishedDownloadProgress(buffer, readCount, conn.getContentLength(), len);
+						this.response.onPublishedDownloadProgress(buffer, readCount, len, conn.getContentLength());
+
+						publishProgress(new Packet(readCount, conn.getContentLength(), true));
 					}
 
-					byteBuffer.write(buffer, 0, len);
 					readCount += len;
 				}
 
@@ -933,17 +953,17 @@ public class AsyncHttpClient
 					this.response.getConnectionInfo().responseLength = readCount;
 				}
 
-				byte[] responseContent = byteBuffer.toByteArray();
 				if (this.response != null)
 				{
 					// we fake the content length, because it can be -1
-					this.response.onPublishedDownloadProgress(responseContent, readCount, readCount);
-					this.response.onPublishedDownloadProgress(responseContent, readCount, readCount, readCount);
+					this.response.onPublishedDownloadProgress(null, readCount, readCount);
+					this.response.onPublishedDownloadProgress(null, readCount, readCount, readCount);
+
+					publishProgress(new Packet(readCount, conn.getContentLength(), true));
 				}
 
 				is.close();
 				i.close();
-				byteBuffer.close();
 				conn.disconnect();
 
 				if (this.response != null)
@@ -951,11 +971,11 @@ public class AsyncHttpClient
 					this.response.getConnectionInfo().responseCode = responseCode;
 					if (this.response.getConnectionInfo().responseCode / 100 == 2)
 					{
-						this.response.onSuccess(responseContent);
+						this.response.onSuccess();
 					}
 					else
 					{
-						this.response.onFailure(responseContent);
+						this.response.onFailure();
 					}
 				}
 			}
@@ -965,6 +985,23 @@ public class AsyncHttpClient
 			}
 
 			return null;
+		}
+
+		@Override protected void onProgressUpdate(Packet... values)
+		{
+			super.onProgressUpdate(values);
+
+			if (this.response != null)
+			{
+				if (values[0].isDownload)
+				{
+					this.response.onPublishedDownloadProgressUI(values[0].length, values[0].total);
+				}
+				else
+				{
+					this.response.onPublishedUploadProgressUI(values[0].length, values[0].total);
+				}
+			}
 		}
 
 		@Override protected void onPostExecute(byte[] result)

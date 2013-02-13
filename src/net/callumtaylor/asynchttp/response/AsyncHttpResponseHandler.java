@@ -36,9 +36,7 @@ public abstract class AsyncHttpResponseHandler
 	 * downloaded.
 	 *
 	 * @param chunk
-	 *            will be the total byte array when this is called.
-	 * @param chunk
-	 *            The chunk of data
+	 *            The chunk of data. This will be the <b>null</b> after the total amount has been downloaded.
 	 * @param chunkLength
 	 *            The length of the chunk
 	 * @param totalLength
@@ -53,18 +51,26 @@ public abstract class AsyncHttpResponseHandler
 	 * downloaded.
 	 *
 	 * @param chunk
-	 *            will be the total byte array when this is called.
-	 * @param chunk
-	 *            The chunk of data
+	 *            The chunk of data. This will be the <b>null</b> after the total amount has been downloaded.
 	 * @param chunkLength
 	 *            The length of the chunk
+	 * @param totalProcessed
+	 *            The total amount of data processed from the request.
 	 * @param totalLength
 	 *            The total size of the request. <b>note:</b> This <i>can</i> be
 	 *            -1 during download.
-	 * @param totalProcessed
-	 *            The total amount of data processed from the request.
 	 */
-	public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalLength, long totalProcessed){}
+	public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength){}
+
+	/**
+	 * Runs on the UI thread. Useful for updating progress bars.
+	 *
+	 * @param totalProcessed
+	 *            The total processed sized of the request
+	 * @param totalLength
+	 *            The total length of the request
+	 */
+	public void onPublishedDownloadProgressUI(long totalProcessed, long totalLength){}
 
 	/**
 	 * Called when a chunk has been uploaded to the request. This will be
@@ -91,12 +97,22 @@ public abstract class AsyncHttpResponseHandler
 	 *            The chunk of data
 	 * @param chunkLength
 	 *            The length of the chunk
-	 * @param totalLength
-	 *            The total size of the request.
 	 * @param totalProcessed
 	 *            The total amount of data processed from the request.
+	 * @param totalLength
+	 *            The total size of the request.
 	 */
-	public void onPublishedUploadProgress(byte[] chunk, int chunkLength, long totalLength, long totalProcessed){}
+	public void onPublishedUploadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength){}
+
+	/**
+	 * Runs on the UI thread. Useful for updating progress bars.
+	 *
+	 * @param totalProcessed
+	 *            The total processed sized of the request
+	 * @param totalLength
+	 *            The total length of the request
+	 */
+	public void onPublishedUploadProgressUI(long totalProcessed, long totalLength){}
 
 	/**
 	 * Called just before {@link onSuccess}
@@ -107,27 +123,16 @@ public abstract class AsyncHttpResponseHandler
 	 * Processes the response from the stream.
 	 * This is <b>not</b> ran on the UI thread
 	 *
-	 * @param response
-	 *            The complete byte array of content recieved from the
-	 *            connection. Override this to handle the content and return it
-	 *            if you plan on subclassing your handler to allow the subclass
-	 *            to call super to get the modified content.
 	 * @return The modified data set, or null
 	 */
-	public abstract Object onSuccess(byte[] response);
+	public abstract Object onSuccess();
 
 	/**
 	 * Called when a response was not 2xx.
 	 *
-	 * @param response
-	 *            The returned data from the server The complete byte array of
-	 *            content recieved from the connection. Override this to handle
-	 *            the content and return it if you plan on subclassing your
-	 *            handler to allow the subclass to call super to get the
-	 *            modified content.
 	 * @return The modified data set, or null
 	 */
-	public Object onFailure(byte[] response){ return null; }
+	public Object onFailure(){ return null; }
 
 	/**
 	 * Called before {@link onFinish}
