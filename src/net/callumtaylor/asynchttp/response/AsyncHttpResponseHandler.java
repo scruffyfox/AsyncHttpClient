@@ -120,19 +120,27 @@ public abstract class AsyncHttpResponseHandler
 	public void beforeCallback(){}
 
 	/**
+	 * Gets the content generated from the
+	 * response.
+	 *
+	 * @return The generated content object
+	 */
+	public abstract Object getContent();
+
+	/**
 	 * Processes the response from the stream.
 	 * This is <b>not</b> ran on the UI thread
 	 *
 	 * @return The modified data set, or null
 	 */
-	public abstract Object onSuccess();
+	public abstract void onSuccess();
 
 	/**
 	 * Called when a response was not 2xx.
 	 *
 	 * @return The modified data set, or null
 	 */
-	public Object onFailure(){ return null; }
+	public void onFailure(){}
 
 	/**
 	 * Called before {@link onFinish}

@@ -1,6 +1,6 @@
 package net.callumtaylor.asynchttp.response;
 
-public class StringResponseHandler extends AsyncHttpResponseHandler
+public abstract class StringResponseHandler extends AsyncHttpResponseHandler
 {
 	StringBuffer stringBuffer = new StringBuffer();
 
@@ -25,12 +25,7 @@ public class StringResponseHandler extends AsyncHttpResponseHandler
 	 *
 	 * @return The data represented as a String
 	 */
-	@Override public String onSuccess()
-	{
-		return stringBuffer.toString();
-	}
-
-	@Override public String onFailure()
+	@Override public String getContent()
 	{
 		return stringBuffer.toString();
 	}

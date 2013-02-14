@@ -8,7 +8,7 @@ import org.json.JSONArray;
  *
  * This is <b>not</b> the same as {@link JsonResponseHandler}
  */
-public class JSONArrayResponseHandler extends AsyncHttpResponseHandler
+public abstract class JSONArrayResponseHandler extends AsyncHttpResponseHandler
 {
 	StringBuffer stringBuffer = new StringBuffer();
 
@@ -33,19 +33,7 @@ public class JSONArrayResponseHandler extends AsyncHttpResponseHandler
 	 *
 	 * @return The data represented as a gson JsonElement primitive type
 	 */
-	@Override public JSONArray onSuccess()
-	{
-		try
-		{
-			return new JSONArray(new String(stringBuffer.toString()));
-		}
-		catch (Exception e)
-		{
-			return null;
-		}
-	}
-
-	@Override public JSONArray onFailure()
+	@Override public JSONArray getContent()
 	{
 		try
 		{

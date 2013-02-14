@@ -3,7 +3,7 @@ package net.callumtaylor.asynchttp.response;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
-public class JsonResponseHandler extends AsyncHttpResponseHandler
+public abstract class JsonResponseHandler extends AsyncHttpResponseHandler
 {
 	StringBuffer stringBuffer = new StringBuffer();
 
@@ -28,12 +28,7 @@ public class JsonResponseHandler extends AsyncHttpResponseHandler
 	 *
 	 * @return The data represented as a gson JsonElement primitive type
 	 */
-	@Override public JsonElement onSuccess()
-	{
-		return new JsonParser().parse(new String(stringBuffer.toString()));
-	}
-
-	@Override public JsonElement onFailure()
+	@Override public JsonElement getContent()
 	{
 		return new JsonParser().parse(new String(stringBuffer.toString()));
 	}

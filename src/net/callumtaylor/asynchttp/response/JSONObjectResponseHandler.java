@@ -8,7 +8,7 @@ import org.json.JSONObject;
  *
  * This is <b>not</b> the same as {@link JsonResponseHandler}
  */
-public class JSONObjectResponseHandler extends AsyncHttpResponseHandler
+public abstract class JSONObjectResponseHandler extends AsyncHttpResponseHandler
 {
 	StringBuffer stringBuffer = new StringBuffer();
 
@@ -33,19 +33,7 @@ public class JSONObjectResponseHandler extends AsyncHttpResponseHandler
 	 *
 	 * @return The data represented as a gson JsonElement primitive type
 	 */
-	@Override public JSONObject onSuccess()
-	{
-		try
-		{
-			return new JSONObject(new String(stringBuffer.toString()));
-		}
-		catch (Exception e)
-		{
-			return null;
-		}
-	}
-
-	@Override public JSONObject onFailure()
+	@Override public JSONObject getContent()
 	{
 		try
 		{
