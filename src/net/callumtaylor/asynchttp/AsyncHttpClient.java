@@ -35,6 +35,8 @@ import android.os.Build;
 import android.text.TextUtils;
 
 /**
+ * @mainpage
+ *
  * The client class used for initiating HTTP requests using an AsyncTask. It
  * follows a RESTful paradigm for the connections with the 4 possible methods,
  * GET, POST, PUT and DELETE.
