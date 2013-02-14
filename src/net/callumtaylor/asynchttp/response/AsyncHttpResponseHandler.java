@@ -15,6 +15,10 @@ import net.callumtaylor.asynchttp.obj.ConnectionInfo;
  * the bacgkround thread. All your processing should be handled in one of those
  * 4 methods and then either call to run on UI thread a new runnable, or handle
  * in {@link onFinish} which runs on the UI thread
+ *
+ * In order to get the content created from the response handler, you must
+ * call {@link getContent} which can be accessed in {@link onSuccess} or
+ * {@link onFailure}
  */
 public abstract class AsyncHttpResponseHandler
 {

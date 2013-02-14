@@ -27,28 +27,30 @@ public class MultiPartEntity implements HttpEntity
 	private String boundary = null;
 
 	private final ByteArrayOutputStream out = new ByteArrayOutputStream();
-	private final boolean isSetLast = false;
-	private final boolean isSetFirst = false;
+	private int partCount = 0;
 
 	public MultiPartEntity()
 	{
 		StringBuffer buf = new StringBuffer();
 		Random rand = new Random();
-		for (int i = 0; i < 30; i++)
+		for (int i = 0; i < 15; i++)
 		{
 			buf.append(MULTIPART_CHARS[rand.nextInt(MULTIPART_CHARS.length)]);
 		}
 
 		this.boundary = "AsyncHttpClient-callumtaylor.net-" + buf.toString();
+	}
 
-		try
+	private void addStartingBoundary()
+	{
+		if (partCount++ < 1)
 		{
-			StringBuffer res = new StringBuffer("\r\n").append("--").append(boundary).append("\r\n");
-			out.write(res.toString().getBytes());
-		}
-		catch (Exception e)
-		{
-
+			try
+			{
+				StringBuffer res = new StringBuffer("\r\n").append("--").append(boundary).append("\r\n");
+				out.write(res.toString().getBytes());
+			}
+			catch (Exception e){}
 		}
 	}
 
@@ -60,6 +62,8 @@ public class MultiPartEntity implements HttpEntity
 	 */
 	public void addPart(String key, String value)
 	{
+		addStartingBoundary();
+
 		try
 		{
 			out.write(("Content-Disposition: form-data; name=\"" + key + "\"\r\n\r\n").getBytes());
@@ -83,6 +87,8 @@ public class MultiPartEntity implements HttpEntity
 	 */
 	public void addPart(String key, HttpEntity value)
 	{
+		addStartingBoundary();
+
 		try
 		{
 			out.write(("Content-Disposition: form-data; name=\"" + key + "\"\r\n\r\n").getBytes());
@@ -113,6 +119,8 @@ public class MultiPartEntity implements HttpEntity
 	 */
 	public void addFilePart(String key, HttpEntity value)
 	{
+		addStartingBoundary();
+
 		try
 		{
 			StringBuffer fileRes = new StringBuffer();
@@ -132,7 +140,7 @@ public class MultiPartEntity implements HttpEntity
 			}
 
 			out.write("Content-Transfer-Encoding: binary\r\n\r\n".getBytes());
-			out.write(("\r\n--" + boundary + "\r\n").getBytes());
+			out.write(("\r\n--" + boundary + "--\r\n").getBytes());
 		}
 		catch (IOException e)
 		{
@@ -150,6 +158,8 @@ public class MultiPartEntity implements HttpEntity
 	 */
 	public void addFilePart(String key, String filename, HttpEntity value)
 	{
+		addStartingBoundary();
+
 		try
 		{
 			StringBuffer fileRes = new StringBuffer();

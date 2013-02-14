@@ -37,7 +37,15 @@ import android.text.TextUtils;
 /**
  * The client class used for initiating HTTP requests using an AsyncTask. It
  * follows a RESTful paradigm for the connections with the 4 possible methods,
- * GET, POST, PUT and DELETE. <b>Depends on</b>
+ * GET, POST, PUT and DELETE.
+ *
+ * <b>Note:</b> Because AsyncHttpClient uses
+ * AsyncTask, only one instance can be created at a time. If one client makes 2
+ * requests, the first request is canceled for the new request. You can either
+ * wait for the first to finish before making the second, or you can create two
+ * seperate instances.
+ *
+ * <b>Depends on</b>
  * <ul>
  * <li>{@link AsyncHttpResponseHandler}</li>
  * <li>{@link HttpEntity}</li>
@@ -56,10 +64,9 @@ import android.text.TextUtils;
  *
  * client.get(&quot;api/v1/&quot;, params, headers, new JsonResponseHandler()
  * {
- * 	&#064;Override public JsonElement onSuccess()
+ * 	&#064;Override public void onSuccess()
  * 	{
- * 		JsonElement result = super.onSuccess();
- * 		return null;
+ * 		JsonElement result = getContent();
  * 	}
  * });
  * </pre>
@@ -76,10 +83,9 @@ import android.text.TextUtils;
  *
  * client.delete(&quot;api/v1/&quot;, params, headers, new JsonResponseHandler()
  * {
- * 	&#064;Override public JsonElement onSuccess()
+ * 	&#064;Override public void onSuccess()
  * 	{
- * 		JsonElement result = super.onSuccess();
- * 		return null;
+ * 		JsonElement result = getContent();
  * 	}
  * });
  * </pre>
@@ -99,10 +105,9 @@ import android.text.TextUtils;
  *
  * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
  * {
- * 	&#064;Override public JsonElement onSuccess()
+ * 	&#064;Override public void onSuccess()
  * 	{
- * 		JsonElement result = super.onSuccess();
- * 		return null;
+ * 		JsonElement result = getContent();
  * 	}
  * });
  * </pre>
@@ -125,10 +130,9 @@ import android.text.TextUtils;
  *
  * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
  * {
- * 	&#064;Override public JsonElement onSuccess()
+ * 	&#064;Override public void onSuccess()
  * 	{
- * 		JsonElement result = super.onSuccess();
- * 		return null;
+ * 		JsonElement result = getContent();
  * 	}
  * });
  * </pre>
@@ -148,10 +152,9 @@ import android.text.TextUtils;
  *
  * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
  * {
- * 	&#064;Override public JsonElement onSuccess()
+ * 	&#064;Override public void onSuccess()
  * 	{
- * 		JsonElement result = super.onSuccess();
- * 		return null;
+ * 		JsonElement result = getContent();
  * 	}
  * });
  * </pre>
@@ -772,15 +775,13 @@ public class AsyncHttpClient
 
 	private void executeTask(RequestMode mode, Uri uri, List<Header> headers, HttpEntity sendData, AsyncHttpResponseHandler response)
 	{
-		if (executorTask != null || (executorTask != null && executorTask.getStatus() == Status.RUNNING))
+		if (executorTask != null || (executorTask != null && (executorTask.getStatus() == Status.RUNNING || executorTask.getStatus() == Status.PENDING)))
 		{
 			executorTask.cancel(true);
-		}
-		else
-		{
-			executorTask = new ClientExecutorTask(mode, uri, headers, sendData, response);
+			executorTask = null;
 		}
 
+		executorTask = new ClientExecutorTask(mode, uri, headers, sendData, response);
 		executorTask.execute();
 	}
 
@@ -898,7 +899,7 @@ public class AsyncHttpClient
 				{
 					long contentLength = postData.getContentLength();
 
-					if (this.response != null)
+					if (this.response != null && !isCancelled())
 					{
 						this.response.getConnectionInfo().connectionLength = contentLength;
 					}
@@ -912,7 +913,7 @@ public class AsyncHttpClient
 
 					while ((len = content.read(buffer)) != -1)
 					{
-						if (this.response != null)
+						if (this.response != null && !isCancelled())
 						{
 							this.response.onPublishedUploadProgress(buffer, len, contentLength);
 							this.response.onPublishedUploadProgress(buffer, len, writeCount, contentLength);
@@ -924,7 +925,7 @@ public class AsyncHttpClient
 						writeCount += len;
 					}
 
-					if (this.response != null)
+					if (this.response != null && !isCancelled())
 					{
 						publishProgress(new Packet(writeCount, contentLength, false));
 					}
@@ -955,7 +956,7 @@ public class AsyncHttpClient
 					i = new BufferedInputStream(i, BUFFER_SIZE);
 				}
 
-				if (this.response != null)
+				if (this.response != null && !isCancelled())
 				{
 					this.response.getConnectionInfo().responseCode = conn.getResponseCode();
 				}
@@ -967,7 +968,7 @@ public class AsyncHttpClient
 				int readCount = 0;
 				while ((len = is.read(buffer)) > -1)
 				{
-					if (this.response != null)
+					if (this.response != null && !isCancelled())
 					{
 						this.response.onPublishedDownloadProgress(buffer, len, conn.getContentLength());
 						this.response.onPublishedDownloadProgress(buffer, len, readCount, conn.getContentLength());
@@ -978,7 +979,7 @@ public class AsyncHttpClient
 					readCount += len;
 				}
 
-				if (this.response != null)
+				if (this.response != null && !isCancelled())
 				{
 					this.response.getConnectionInfo().responseLength = readCount;
 
@@ -993,7 +994,7 @@ public class AsyncHttpClient
 				i.close();
 				conn.disconnect();
 
-				if (this.response != null)
+				if (this.response != null && !isCancelled())
 				{
 					this.response.getConnectionInfo().responseTime = System.currentTimeMillis();
 					this.response.getConnectionInfo().responseCode = responseCode;
@@ -1019,7 +1020,7 @@ public class AsyncHttpClient
 		{
 			super.onProgressUpdate(values);
 
-			if (this.response != null)
+			if (this.response != null && !isCancelled())
 			{
 				if (values[0].isDownload)
 				{
@@ -1036,7 +1037,7 @@ public class AsyncHttpClient
 		{
 			super.onPostExecute(result);
 
-			if (this.response != null)
+			if (this.response != null && !isCancelled())
 			{
 				this.response.beforeCallback();
 

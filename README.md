@@ -12,6 +12,8 @@ In order to download large files, you will need to subclass `AsyncHttpResponseHa
 
 #Usage example
 
+**Note:** Because AsyncHttpClient uses AsyncTask, only one instance can be created at a time. If one client makes 2 requests, the first request is canceled for the new request. You can either wait for the first to finish before making the second, or you can create two seperate instances.
+
 ##Example GET
 
 ```java
@@ -24,10 +26,24 @@ In order to download large files, you will need to subclass `AsyncHttpResponseHa
 	
 	client.get("api/v1/", params, headers, new JsonResponseHandler()
 	{
-		@Override public JsonElement onSuccess()
+		@Override public void onSuccess()
 		{
-			JsonElement result = super.onSuccess();
-			return null;
+			JsonElement result = getContent();
+		}
+	});
+```
+
+##Example GET - Downloading a large file directly to cache
+
+```java
+	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
+	
+	client.get("api/v1/", new CacheResponseHandler("file.bin")
+	{
+		@Override public void onSuccess()
+		{
+			File result = getContent();
+			boolean exists = result.exists();
 		}
 	});
 ```
@@ -44,10 +60,9 @@ In order to download large files, you will need to subclass `AsyncHttpResponseHa
 	
 	client.delete("api/v1/", params, headers, new JsonResponseHandler()
 	{
-		@Override public JsonElement onSuccess()
+		@Override public void onSuccess()
 		{
-			JsonElement result = super.onSuccess();
-			return null;
+			JsonElement result = getContent();
 		}
 	});
 ```
@@ -67,10 +82,26 @@ In order to download large files, you will need to subclass `AsyncHttpResponseHa
 	
 	client.post("api/v1/", params, entity, headers, new JsonResponseHandler()
 	{
-		@Override public JsonElement onSuccess()
+		@Override public void onSuccess()
 		{
-			JsonElement result = super.onSuccess();
-			return null;
+			JsonElement result = getContent();
+		}
+	});
+```
+
+##Example POST - URL Encoded post data
+
+```java
+	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
+	
+	RequestEntity entity = new RequestEntity();
+	entity.add("key", "value");
+	
+	client.post("api/v1/", entity, new JsonResponseHandler()
+	{
+		@Override public void onSuccess()
+		{
+			JsonElement result = getContent();
 		}
 	});
 ```
@@ -93,10 +124,9 @@ In order to download large files, you will need to subclass `AsyncHttpResponseHa
 	
 	client.post("api/v1/", params, entity, headers, new JsonResponseHandler()
 	{
-		@Override public JsonElement onSuccess()
+		@Override public void onSuccess()
 		{
-			JsonElement result = super.onSuccess();
-			return null;
+			JsonElement result = getContent();
 		}
 	});
 ```
@@ -116,10 +146,9 @@ In order to download large files, you will need to subclass `AsyncHttpResponseHa
 	
 	client.post("api/v1/", params, entity, headers, new JsonResponseHandler()
 	{
-		@Override public JsonElement onSuccess()
+		@Override public void onSuccess()
 		{
-			JsonElement result = super.onSuccess();
-			return null;
+			JsonElement result = getContent();
 		}
 	});
 ```
