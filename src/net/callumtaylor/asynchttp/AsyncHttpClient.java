@@ -895,11 +895,11 @@ public class AsyncHttpClient
 					}
 				}
 
-				conn.connect();
-
 				if (requestMode == RequestMode.POST || requestMode == RequestMode.PUT)
 				{
 					long contentLength = postData.getContentLength();
+					conn.setFixedLengthStreamingMode((int)contentLength);
+					conn.connect();
 
 					if (this.response != null && !isCancelled())
 					{
@@ -924,6 +924,7 @@ public class AsyncHttpClient
 						}
 
 						wr.write(buffer, 0, len);
+						wr.flush();
 						writeCount += len;
 					}
 
@@ -932,8 +933,11 @@ public class AsyncHttpClient
 						publishProgress(new Packet(writeCount, contentLength, false));
 					}
 
-					wr.flush();
 					wr.close();
+				}
+				else
+				{
+					conn.connect();
 				}
 
 				// Get the response
@@ -1000,19 +1004,23 @@ public class AsyncHttpClient
 				{
 					this.response.getConnectionInfo().responseTime = System.currentTimeMillis();
 					this.response.getConnectionInfo().responseCode = responseCode;
-					if (this.response.getConnectionInfo().responseCode / 100 == 2)
-					{
-						this.response.onSuccess();
-					}
-					else
-					{
-						this.response.onFailure();
-					}
 				}
 			}
 			catch (Exception e)
 			{
 				e.printStackTrace();
+			}
+
+			if (this.response != null && !isCancelled())
+			{
+				if (this.response.getConnectionInfo().responseCode / 100 == 2)
+				{
+					this.response.onSuccess();
+				}
+				else
+				{
+					this.response.onFailure();
+				}
 			}
 
 			return null;
