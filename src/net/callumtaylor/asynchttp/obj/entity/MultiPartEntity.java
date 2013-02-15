@@ -28,6 +28,7 @@ public class MultiPartEntity implements HttpEntity
 
 	private final ByteArrayOutputStream out = new ByteArrayOutputStream();
 	private int partCount = 0;
+	private boolean hasEndingPart = false;
 
 	public MultiPartEntity()
 	{
@@ -39,18 +40,27 @@ public class MultiPartEntity implements HttpEntity
 		}
 
 		this.boundary = "AsyncHttpClient-callumtaylor.net-" + buf.toString();
+
+		try
+		{
+			StringBuffer res = new StringBuffer("\r\n").append("--").append(boundary).append("\r\n");
+			out.write(res.toString().getBytes());
+		}
+		catch (Exception e){}
 	}
 
 	private void addStartingBoundary()
 	{
-		if (partCount++ < 1)
+		try
 		{
-			try
+			if (partCount++ > 0)
 			{
-				StringBuffer res = new StringBuffer("\r\n").append("--").append(boundary).append("\r\n");
-				out.write(res.toString().getBytes());
+				out.write("\r\n".getBytes());
 			}
-			catch (Exception e){}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
 		}
 	}
 
@@ -66,9 +76,13 @@ public class MultiPartEntity implements HttpEntity
 
 		try
 		{
-			out.write(("Content-Disposition: form-data; name=\"" + key + "\"\r\n\r\n").getBytes());
-			out.write(value.getBytes());
-			out.write(("\r\n--" + boundary + "\r\n").getBytes());
+			StringBuffer res = new StringBuffer();
+			res.append("Content-Disposition: form-data; name=\"")
+				.append(key)
+				.append("\"\r\n").append("\r\n")
+				.append(value)
+				.append("\r\n").append("--").append(boundary);
+			out.write(res.toString().getBytes());
 		}
 		catch (IOException e)
 		{
@@ -101,7 +115,7 @@ public class MultiPartEntity implements HttpEntity
 				out.write(buffer, 0, len);
 			}
 
-			out.write(("\r\n--" + boundary + "\r\n").getBytes());
+			out.write(("\r\n--" + boundary).getBytes());
 		}
 		catch (IOException e)
 		{
@@ -139,8 +153,7 @@ public class MultiPartEntity implements HttpEntity
 				out.write(buffer, 0, len);
 			}
 
-			out.write("Content-Transfer-Encoding: binary\r\n\r\n".getBytes());
-			out.write(("\r\n--" + boundary + "--\r\n").getBytes());
+			out.write(("\r\n--" + boundary).getBytes());
 		}
 		catch (IOException e)
 		{
@@ -177,7 +190,7 @@ public class MultiPartEntity implements HttpEntity
 				out.write(buffer, 0, len);
 			}
 
-			out.write(("\r\n--" + boundary + "--\r\n").getBytes());
+			out.write(("\r\n--" + boundary).getBytes());
 		}
 		catch (IOException e)
 		{
@@ -187,6 +200,19 @@ public class MultiPartEntity implements HttpEntity
 
 	@Override public long getContentLength()
 	{
+		try
+		{
+			if (!hasEndingPart)
+			{
+				out.write(("--\r\n").getBytes());
+				hasEndingPart = true;
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+
 		return out.size();
 	}
 
@@ -212,6 +238,12 @@ public class MultiPartEntity implements HttpEntity
 
 	@Override public void writeTo(OutputStream outstream) throws IOException
 	{
+		if (!hasEndingPart)
+		{
+			out.write(("--\r\n").getBytes());
+			hasEndingPart = true;
+		}
+
 		outstream.write(out.toByteArray());
 	}
 
@@ -230,6 +262,12 @@ public class MultiPartEntity implements HttpEntity
 
 	@Override public InputStream getContent() throws IOException, UnsupportedOperationException
 	{
+		if (!hasEndingPart)
+		{
+			out.write(("--\r\n").getBytes());
+			hasEndingPart = true;
+		}
+
 		return new ByteArrayInputStream(out.toByteArray());
 	}
 }
