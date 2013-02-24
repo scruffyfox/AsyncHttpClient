@@ -22,7 +22,7 @@ import net.callumtaylor.asynchttp.obj.ConnectionInfo;
  */
 public abstract class AsyncHttpResponseHandler
 {
-	private ConnectionInfo connectionInfo = new ConnectionInfo();
+	private final ConnectionInfo connectionInfo = new ConnectionInfo();
 
 	public ConnectionInfo getConnectionInfo()
 	{
@@ -155,4 +155,13 @@ public abstract class AsyncHttpResponseHandler
 	 * Called when the streams have all finished, success or not
 	 */
 	public void onFinish(){}
+
+	/**
+	 * Called when the streams have all finished, success or not
+	 *
+	 * @param failed
+	 *            If the stream failed or not. Useful to display any UI updates
+	 *            here.
+	 */
+	public void onFinish(boolean failed){}
 }

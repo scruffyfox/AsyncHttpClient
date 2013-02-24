@@ -895,7 +895,7 @@ public class AsyncHttpClient
 					}
 				}
 
-				if (requestMode == RequestMode.POST || requestMode == RequestMode.PUT)
+				if ((requestMode == RequestMode.POST || requestMode == RequestMode.PUT) && postData != null)
 				{
 					long contentLength = postData.getContentLength();
 					conn.setFixedLengthStreamingMode((int)contentLength);
@@ -1053,6 +1053,7 @@ public class AsyncHttpClient
 
 				this.response.beforeFinish();
 				this.response.onFinish();
+				this.response.onFinish(this.response.getConnectionInfo().responseCode / 100 != 2);
 			}
 		}
 	}
