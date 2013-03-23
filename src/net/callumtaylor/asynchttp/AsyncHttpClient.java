@@ -836,7 +836,11 @@ public class AsyncHttpClient
 			try
 			{
 				URL url = new URL(requestUri.toString());
-				this.response.getConnectionInfo().connectionUrl = requestUri.toString();
+
+				if (this.response != null)
+				{
+					this.response.getConnectionInfo().connectionUrl = requestUri.toString();
+				}
 
 				if (Build.VERSION.SDK_INT < Build.VERSION_CODES.FROYO)
 				{
