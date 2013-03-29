@@ -250,6 +250,17 @@ public class AsyncHttpClient
 	}
 
 	/**
+	 * Cancels a request if it's running
+	 */
+	public void cancel()
+	{
+		if (executorTask != null && executorTask.getStatus() == Status.RUNNING)
+		{
+			executorTask.cancel(true);
+		}
+	}
+
+	/**
 	 * Performs a GET request on the baseUri
 	 * @param response The response handler for the request
 	 */
