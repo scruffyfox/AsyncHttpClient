@@ -11,7 +11,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 import javax.net.ssl.HostnameVerifier;
@@ -27,6 +30,7 @@ import net.callumtaylor.asynchttp.response.AsyncHttpResponseHandler;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicHeader;
 
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -938,6 +942,21 @@ public class AsyncHttpClient
 				else
 				{
 					conn.connect();
+				}
+
+				if (response != null)
+				{
+					Map<String, List<String>> headers = conn.getHeaderFields();
+					Iterator<String> t = headers.keySet().iterator();
+					while (t.hasNext())
+					{
+						String key = t.next();
+						List<String> k = headers.get(key);
+						String[] values = k.toArray(new String[k.size()]);
+						Header header = new BasicHeader(key == null ? "null" : key, Arrays.toString(values));
+
+						response.getConnectionInfo().responseHeaders.add(header);
+					}
 				}
 
 				// Get the response

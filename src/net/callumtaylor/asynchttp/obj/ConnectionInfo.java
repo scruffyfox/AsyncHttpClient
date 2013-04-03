@@ -1,6 +1,11 @@
 package net.callumtaylor.asynchttp.obj;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import net.callumtaylor.asynchttp.AsyncHttpClient.RequestMode;
+
+import org.apache.http.Header;
 
 public class ConnectionInfo
 {
@@ -13,8 +18,10 @@ public class ConnectionInfo
 	public int responseCode = 0;
 	public long responseTime = 0L;
 
+	public List<Header> responseHeaders = new ArrayList<Header>();
+
 	@Override public String toString()
 	{
-		return "ConnectionInfo " + hashCode() + "\n[\n    connectionUrl=" + connectionUrl + ", \n    requestMethod=" + requestMethod.getCanonical() + ", \n    connectionTime=" + connectionTime + ", \n    connectionLength=" + connectionLength + ", \n    responseLength=" + responseLength + ", \n    responseCode=" + responseCode + ", \n    responseTime=" + responseTime + "\n]";
+		return "ConnectionInfo [connectionUrl=" + connectionUrl + ", requestMethod=" + requestMethod + ", connectionTime=" + connectionTime + ", connectionLength=" + connectionLength + ", responseLength=" + responseLength + ", responseCode=" + responseCode + ", responseTime=" + responseTime + ", responseHeaders=" + responseHeaders + "]";
 	}
 }
