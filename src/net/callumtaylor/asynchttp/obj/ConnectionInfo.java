@@ -1,11 +1,9 @@
 package net.callumtaylor.asynchttp.obj;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import net.callumtaylor.asynchttp.AsyncHttpClient.RequestMode;
-
-import org.apache.http.Header;
 
 public class ConnectionInfo
 {
@@ -18,7 +16,7 @@ public class ConnectionInfo
 	public int responseCode = 0;
 	public long responseTime = 0L;
 
-	public List<Header> responseHeaders = new ArrayList<Header>();
+	public Map<String, List<String>> responseHeaders;
 
 	@Override public String toString()
 	{
