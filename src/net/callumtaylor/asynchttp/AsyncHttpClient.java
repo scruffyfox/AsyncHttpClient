@@ -254,6 +254,17 @@ public class AsyncHttpClient
 	}
 
 	/**
+	 * Cancels a request if it's running
+	 */
+	public void cancel()
+	{
+		if (executorTask != null && executorTask.getStatus() == Status.RUNNING)
+		{
+			executorTask.cancel(true);
+		}
+	}
+
+	/**
 	 * Performs a GET request on the baseUri
 	 * @param response The response handler for the request
 	 */
@@ -840,7 +851,11 @@ public class AsyncHttpClient
 			try
 			{
 				URL url = new URL(requestUri.toString());
-				this.response.getConnectionInfo().connectionUrl = requestUri.toString();
+
+				if (this.response != null)
+				{
+					this.response.getConnectionInfo().connectionUrl = requestUri.toString();
+				}
 
 				if (Build.VERSION.SDK_INT < Build.VERSION_CODES.FROYO)
 				{
