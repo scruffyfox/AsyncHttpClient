@@ -913,8 +913,8 @@ public class AsyncHttpClient
 				if ((requestMode == RequestMode.POST || requestMode == RequestMode.PUT) && postData != null)
 				{
 					long contentLength = postData.getContentLength();
-					conn.setFixedLengthStreamingMode((int)contentLength);
-					conn.connect();
+					//conn.setFixedLengthStreamingMode((int)contentLength);
+					//conn.connect();
 
 					if (this.response != null && !isCancelled())
 					{
