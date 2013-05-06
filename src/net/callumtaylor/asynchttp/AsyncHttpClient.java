@@ -929,9 +929,9 @@ public class AsyncHttpClient
 					int writeCount = 0;
 					int len = 0;
 
-					while ((len = content.read(buffer)) != -1)
+					while ((len = content.read(buffer)) != -1  && !isCancelled())
 					{
-						if (this.response != null && !isCancelled())
+						if (this.response != null)
 						{
 							this.response.onPublishedUploadProgress(buffer, len, contentLength);
 							this.response.onPublishedUploadProgress(buffer, len, writeCount, contentLength);
@@ -993,9 +993,9 @@ public class AsyncHttpClient
 
 				int len = 0;
 				int readCount = 0;
-				while ((len = is.read(buffer)) > -1)
+				while ((len = is.read(buffer)) > -1 && !isCancelled())
 				{
-					if (this.response != null && !isCancelled())
+					if (this.response != null)
 					{
 						this.response.onPublishedDownloadProgress(buffer, len, conn.getContentLength());
 						this.response.onPublishedDownloadProgress(buffer, len, readCount, conn.getContentLength());
@@ -1034,7 +1034,7 @@ public class AsyncHttpClient
 
 			if (this.response != null && !isCancelled())
 			{
-				if (this.response.getConnectionInfo().responseCode / 100 == 2)
+				if (this.response.getConnectionInfo().responseCode != 0 && this.response.getConnectionInfo().responseCode / 100 == 2)
 				{
 					this.response.onSuccess();
 				}
