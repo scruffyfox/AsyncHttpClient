@@ -871,6 +871,7 @@ public class AsyncHttpClient
 				conn.setRequestProperty("User-Agent", USER_AGENT);
 				conn.setRequestProperty("Connection", "close");
 				conn.setConnectTimeout((int)requestTimeout);
+				conn.setReadTimeout((int)requestTimeout);
 				conn.setFollowRedirects(true);
 				conn.setUseCaches(false);
 
