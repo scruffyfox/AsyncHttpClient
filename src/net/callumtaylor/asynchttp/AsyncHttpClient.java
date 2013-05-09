@@ -986,41 +986,51 @@ public class AsyncHttpClient
 
 				if (this.response != null && !isCancelled())
 				{
-					this.response.getConnectionInfo().responseCode = conn.getResponseCode();
+					this.response.getConnectionInfo().responseCode = responseCode;
 				}
 
-				InputStream is = new BufferedInputStream(i, BUFFER_SIZE);
-				byte[] buffer = new byte[BUFFER_SIZE];
-
-				int len = 0;
-				int readCount = 0;
-				while ((len = is.read(buffer)) > -1 && !isCancelled())
+				try
 				{
-					if (this.response != null)
+					if (conn.getContentLength() != 0)
 					{
-						this.response.onPublishedDownloadProgress(buffer, len, conn.getContentLength());
-						this.response.onPublishedDownloadProgress(buffer, len, readCount, conn.getContentLength());
+						InputStream is = new BufferedInputStream(i, BUFFER_SIZE);
+						byte[] buffer = new byte[BUFFER_SIZE];
 
-						publishProgress(new Packet(readCount, conn.getContentLength(), true));
+						int len = 0;
+						int readCount = 0;
+						while ((len = is.read(buffer)) > -1 && !isCancelled())
+						{
+							if (this.response != null)
+							{
+								this.response.onPublishedDownloadProgress(buffer, len, conn.getContentLength());
+								this.response.onPublishedDownloadProgress(buffer, len, readCount, conn.getContentLength());
+
+								publishProgress(new Packet(readCount, conn.getContentLength(), true));
+							}
+
+							readCount += len;
+						}
+
+						if (this.response != null && !isCancelled())
+						{
+							this.response.getConnectionInfo().responseLength = readCount;
+
+							// we fake the content length, because it can be -1
+							this.response.onPublishedDownloadProgress(null, readCount, readCount);
+							this.response.onPublishedDownloadProgress(null, readCount, readCount, readCount);
+
+							publishProgress(new Packet(readCount, conn.getContentLength(), true));
+						}
+
+						is.close();
+						i.close();
+						conn.disconnect();
 					}
-
-					readCount += len;
 				}
-
-				if (this.response != null && !isCancelled())
+				catch (Exception e)
 				{
-					this.response.getConnectionInfo().responseLength = readCount;
-
-					// we fake the content length, because it can be -1
-					this.response.onPublishedDownloadProgress(null, readCount, readCount);
-					this.response.onPublishedDownloadProgress(null, readCount, readCount, readCount);
-
-					publishProgress(new Packet(readCount, conn.getContentLength(), true));
+					// for no-content responses
 				}
-
-				is.close();
-				i.close();
-				conn.disconnect();
 
 				if (this.response != null && !isCancelled())
 				{
