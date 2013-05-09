@@ -965,7 +965,8 @@ public class AsyncHttpClient
 				InputStream i;
 				int responseCode = getResponseCode(conn);
 
-				if ((responseCode / 100) == 2)
+				//if ((responseCode / 100) == 2)
+				if (responseCode < 400)
 				{
 					i = conn.getInputStream();
 				}
@@ -1034,7 +1035,7 @@ public class AsyncHttpClient
 
 			if (this.response != null && !isCancelled())
 			{
-				if (this.response.getConnectionInfo().responseCode != 0 && this.response.getConnectionInfo().responseCode / 100 == 2)
+				if (this.response.getConnectionInfo().responseCode < 400)
 				{
 					this.response.onSuccess();
 				}
@@ -1071,10 +1072,9 @@ public class AsyncHttpClient
 			if (this.response != null && !isCancelled())
 			{
 				this.response.beforeCallback();
-
 				this.response.beforeFinish();
 				this.response.onFinish();
-				this.response.onFinish(this.response.getConnectionInfo().responseCode / 100 != 2);
+				this.response.onFinish(this.response.getConnectionInfo().responseCode >= 400);
 			}
 		}
 	}
