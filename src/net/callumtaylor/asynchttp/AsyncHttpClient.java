@@ -1055,7 +1055,7 @@ public class AsyncHttpClient
 
 			if (this.response != null && !isCancelled())
 			{
-				if (this.response.getConnectionInfo().responseCode < 400)
+				if (this.response.getConnectionInfo().responseCode < 400 && this.response.getConnectionInfo().responseCode > 100)
 				{
 					this.response.onSuccess();
 				}
@@ -1094,7 +1094,7 @@ public class AsyncHttpClient
 				this.response.beforeCallback();
 				this.response.beforeFinish();
 				this.response.onFinish();
-				this.response.onFinish(this.response.getConnectionInfo().responseCode >= 400);
+				this.response.onFinish(this.response.getConnectionInfo().responseCode >= 400 || this.response.getConnectionInfo().responseCode == 0);
 			}
 		}
 	}
