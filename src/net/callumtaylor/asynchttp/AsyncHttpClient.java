@@ -28,6 +28,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
 
+import android.annotation.TargetApi;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.AsyncTask.Status;
@@ -786,6 +787,7 @@ public class AsyncHttpClient
 		return -1;
 	}
 
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	private void executeTask(RequestMode mode, Uri uri, List<Header> headers, HttpEntity sendData, AsyncHttpResponseHandler response)
 	{
 		if (executorTask != null || (executorTask != null && (executorTask.getStatus() == Status.RUNNING || executorTask.getStatus() == Status.PENDING)))
@@ -795,7 +797,15 @@ public class AsyncHttpClient
 		}
 
 		executorTask = new ClientExecutorTask(mode, uri, headers, sendData, response);
-		executorTask.execute();
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+		{
+			executorTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+		}
+		else
+		{
+			executorTask.execute();
+		}
 	}
 
 	private static class Packet
