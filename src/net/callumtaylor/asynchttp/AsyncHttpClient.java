@@ -824,7 +824,7 @@ public class AsyncHttpClient
 
 	private class ClientExecutorTask extends AsyncTask<Void, Packet, Void>
 	{
-		private static final int BUFFER_SIZE = 8192;
+		private static final int BUFFER_SIZE = 1 * 1024 * 512;
 
 		private final AsyncHttpResponseHandler response;
 		private final Uri requestUri;
@@ -935,11 +935,15 @@ public class AsyncHttpClient
 					BufferedInputStream content = new BufferedInputStream(postData.getContent(), BUFFER_SIZE);
 					BufferedOutputStream wr = new BufferedOutputStream(conn.getOutputStream(), BUFFER_SIZE);
 
-					byte[] buffer = new byte[BUFFER_SIZE];
+					int bytesAvailable = content.available();
+					int bufferSize = Math.min(bytesAvailable, BUFFER_SIZE);
+					byte[] buffer = new byte[bufferSize];
 					int writeCount = 0;
 					int len = 0;
 
-					while ((len = content.read(buffer)) != -1  && !isCancelled())
+					int bytesRead = len = content.read(buffer, 0, bufferSize);
+
+					while (bytesRead > 0)
 					{
 						if (this.response != null)
 						{
@@ -949,9 +953,13 @@ public class AsyncHttpClient
 							publishProgress(new Packet(writeCount, contentLength, false));
 						}
 
-						wr.write(buffer, 0, len);
+						wr.write(buffer, 0, bufferSize);
+						writeCount += bufferSize;
+						bytesAvailable = content.available();
+						bufferSize = Math.min(bytesAvailable, BUFFER_SIZE);
+						bytesRead = len = content.read(buffer, 0, bufferSize);
+
 						wr.flush();
-						writeCount += len;
 					}
 
 					if (this.response != null && !isCancelled())
@@ -959,6 +967,7 @@ public class AsyncHttpClient
 						publishProgress(new Packet(writeCount, contentLength, false));
 					}
 
+					content.close();
 					wr.close();
 				}
 				else
