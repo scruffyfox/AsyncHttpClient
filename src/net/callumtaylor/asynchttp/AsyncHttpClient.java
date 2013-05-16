@@ -871,6 +871,7 @@ public class AsyncHttpClient
 				conn.setRequestProperty("User-Agent", USER_AGENT);
 				conn.setRequestProperty("Connection", "close");
 				conn.setConnectTimeout((int)requestTimeout);
+				conn.setReadTimeout((int)requestTimeout);
 				conn.setFollowRedirects(true);
 				conn.setUseCaches(false);
 
@@ -913,8 +914,8 @@ public class AsyncHttpClient
 				if ((requestMode == RequestMode.POST || requestMode == RequestMode.PUT) && postData != null)
 				{
 					long contentLength = postData.getContentLength();
-					conn.setFixedLengthStreamingMode((int)contentLength);
-					conn.connect();
+					//conn.setFixedLengthStreamingMode((int)contentLength);
+					//conn.connect();
 
 					if (this.response != null && !isCancelled())
 					{
@@ -928,9 +929,9 @@ public class AsyncHttpClient
 					int writeCount = 0;
 					int len = 0;
 
-					while ((len = content.read(buffer)) != -1)
+					while ((len = content.read(buffer)) != -1  && !isCancelled())
 					{
-						if (this.response != null && !isCancelled())
+						if (this.response != null)
 						{
 							this.response.onPublishedUploadProgress(buffer, len, contentLength);
 							this.response.onPublishedUploadProgress(buffer, len, writeCount, contentLength);
@@ -964,7 +965,8 @@ public class AsyncHttpClient
 				InputStream i;
 				int responseCode = getResponseCode(conn);
 
-				if ((responseCode / 100) == 2)
+				//if ((responseCode / 100) == 2)
+				if (responseCode < 400)
 				{
 					i = conn.getInputStream();
 				}
@@ -984,41 +986,51 @@ public class AsyncHttpClient
 
 				if (this.response != null && !isCancelled())
 				{
-					this.response.getConnectionInfo().responseCode = conn.getResponseCode();
+					this.response.getConnectionInfo().responseCode = responseCode;
 				}
 
-				InputStream is = new BufferedInputStream(i, BUFFER_SIZE);
-				byte[] buffer = new byte[BUFFER_SIZE];
-
-				int len = 0;
-				int readCount = 0;
-				while ((len = is.read(buffer)) > -1)
+				try
 				{
-					if (this.response != null && !isCancelled())
+					if (conn.getContentLength() != 0)
 					{
-						this.response.onPublishedDownloadProgress(buffer, len, conn.getContentLength());
-						this.response.onPublishedDownloadProgress(buffer, len, readCount, conn.getContentLength());
+						InputStream is = new BufferedInputStream(i, BUFFER_SIZE);
+						byte[] buffer = new byte[BUFFER_SIZE];
 
-						publishProgress(new Packet(readCount, conn.getContentLength(), true));
+						int len = 0;
+						int readCount = 0;
+						while ((len = is.read(buffer)) > -1 && !isCancelled())
+						{
+							if (this.response != null)
+							{
+								this.response.onPublishedDownloadProgress(buffer, len, conn.getContentLength());
+								this.response.onPublishedDownloadProgress(buffer, len, readCount, conn.getContentLength());
+
+								publishProgress(new Packet(readCount, conn.getContentLength(), true));
+							}
+
+							readCount += len;
+						}
+
+						if (this.response != null && !isCancelled())
+						{
+							this.response.getConnectionInfo().responseLength = readCount;
+
+							// we fake the content length, because it can be -1
+							this.response.onPublishedDownloadProgress(null, readCount, readCount);
+							this.response.onPublishedDownloadProgress(null, readCount, readCount, readCount);
+
+							publishProgress(new Packet(readCount, conn.getContentLength(), true));
+						}
+
+						is.close();
+						i.close();
+						conn.disconnect();
 					}
-
-					readCount += len;
 				}
-
-				if (this.response != null && !isCancelled())
+				catch (Exception e)
 				{
-					this.response.getConnectionInfo().responseLength = readCount;
-
-					// we fake the content length, because it can be -1
-					this.response.onPublishedDownloadProgress(null, readCount, readCount);
-					this.response.onPublishedDownloadProgress(null, readCount, readCount, readCount);
-
-					publishProgress(new Packet(readCount, conn.getContentLength(), true));
+					// for no-content responses
 				}
-
-				is.close();
-				i.close();
-				conn.disconnect();
 
 				if (this.response != null && !isCancelled())
 				{
@@ -1033,7 +1045,7 @@ public class AsyncHttpClient
 
 			if (this.response != null && !isCancelled())
 			{
-				if (this.response.getConnectionInfo().responseCode / 100 == 2)
+				if (this.response.getConnectionInfo().responseCode < 400)
 				{
 					this.response.onSuccess();
 				}
@@ -1070,10 +1082,9 @@ public class AsyncHttpClient
 			if (this.response != null && !isCancelled())
 			{
 				this.response.beforeCallback();
-
 				this.response.beforeFinish();
 				this.response.onFinish();
-				this.response.onFinish(this.response.getConnectionInfo().responseCode / 100 != 2);
+				this.response.onFinish(this.response.getConnectionInfo().responseCode >= 400);
 			}
 		}
 	}
