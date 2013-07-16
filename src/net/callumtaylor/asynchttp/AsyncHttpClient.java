@@ -36,6 +36,8 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 
@@ -895,6 +897,9 @@ public class AsyncHttpClient
 					request = new HttpDelete(requestUri.toString());
 				}
 
+				HttpParams p = httpClient.getParams();
+				HttpConnectionParams.setConnectionTimeout(p, (int)requestTimeout);
+				HttpConnectionParams.setSoTimeout(p, (int)requestTimeout);
 				request.setHeader("Connection", "close");
 
 				if (postData != null)
