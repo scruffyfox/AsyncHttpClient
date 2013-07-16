@@ -1,69 +1,16 @@
 package net.callumtaylor.asynchttp.obj.entity;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Random;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 
-import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.FileEntity;
-import org.apache.http.message.BasicHeader;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.InputStreamBody;
+import org.apache.http.entity.mime.content.StringBody;
 
-/**
- * Creates a form entity to send multiple parts together.
- * Use this when uploading images/files.
- *
- * This code is based on the code from Rafael Sanches' blog.
- * http://blog.rafaelsanches.com/2011/01/29/upload-using-multipart-post-using-httpclient-in-android/
- */
-public class MultiPartEntity implements HttpEntity
+public class MultiPartEntity extends MultipartEntity
 {
-	private final static char[] MULTIPART_CHARS = {'-', '_', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
-
-	private String boundary = null;
-
-	private final ByteArrayOutputStream out = new ByteArrayOutputStream();
-	private int partCount = 0;
-	private boolean hasEndingPart = false;
-
-	public MultiPartEntity()
-	{
-		StringBuffer buf = new StringBuffer();
-		Random rand = new Random();
-		for (int i = 0; i < 15; i++)
-		{
-			buf.append(MULTIPART_CHARS[rand.nextInt(MULTIPART_CHARS.length)]);
-		}
-
-		this.boundary = "AsyncHttpClient-callumtaylor.net-" + buf.toString();
-
-		try
-		{
-			StringBuffer res = new StringBuffer("\r\n").append("--").append(boundary).append("\r\n");
-			out.write(res.toString().getBytes());
-		}
-		catch (Exception e){}
-	}
-
-	private void addStartingBoundary()
-	{
-		try
-		{
-			if (partCount++ > 0)
-			{
-				out.write("\r\n".getBytes());
-			}
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-	}
-
 	/**
 	 * Adds a basic KV part to the entity
 	 *
@@ -72,19 +19,11 @@ public class MultiPartEntity implements HttpEntity
 	 */
 	public void addPart(String key, String value)
 	{
-		addStartingBoundary();
-
 		try
 		{
-			StringBuffer res = new StringBuffer();
-			res.append("Content-Disposition: form-data; name=\"")
-				.append(key)
-				.append("\"\r\n").append("\r\n")
-				.append(value)
-				.append("\r\n").append("--").append(boundary);
-			out.write(res.toString().getBytes());
+			addPart(key, new StringBody(value, Charset.forName("UTF-8")));
 		}
-		catch (IOException e)
+		catch (UnsupportedEncodingException e)
 		{
 			e.printStackTrace();
 		}
@@ -94,180 +33,63 @@ public class MultiPartEntity implements HttpEntity
 	 * Adds a new {@link HttpEntity} value to the entity. <b>note:</b> if you're
 	 * looking to add a {@link FileEntity}, use {@link addFilePart}
 	 *
+	 * @deprecated Use {@link addFilePart(String, ContentBody} instead
 	 * @param key
 	 *            The key to add
 	 * @param value
 	 *            The {@link HttpEntity} part to add
 	 */
-	public void addPart(String key, HttpEntity value)
-	{
-		addStartingBoundary();
-
-		try
-		{
-			out.write(("Content-Disposition: form-data; name=\"" + key + "\"\r\n\r\n").getBytes());
-			BufferedInputStream stream = new BufferedInputStream(value.getContent(), 8192);
-			byte[] buffer = new byte[8192];
-			int len = 0;
-
-			while ((len = stream.read(buffer)) > -1)
-			{
-				out.write(buffer, 0, len);
-			}
-
-			out.write(("\r\n--" + boundary).getBytes());
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-	}
-
-	/**
-	 * Adds a new file based {@link HttpEntity} to the entity.
-	 *
-	 * @param key
-	 *            The key to add
-	 * @param value
-	 *            The {@link HttpEntity} part to add
-	 */
-	public void addFilePart(String key, HttpEntity value)
-	{
-		addStartingBoundary();
-
-		try
-		{
-			StringBuffer fileRes = new StringBuffer();
-			fileRes.append("Content-Disposition: form-data; name=\"").append(key)
-					.append("\"; filename=\"").append("untitled").append("\"\r\n")
-					.append("Content-Type: ").append(value.getContentType().getValue()).append("\r\n\r\n");
-
-			out.write(fileRes.toString().getBytes());
-
-			BufferedInputStream stream = new BufferedInputStream(value.getContent(), 8192);
-			byte[] buffer = new byte[8192];
-			int len = 0;
-
-			while ((len = stream.read(buffer)) > -1)
-			{
-				out.write(buffer, 0, len);
-			}
-
-			out.write(("\r\n--" + boundary).getBytes());
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-	}
-
-	/**
-	 * Adds a new file based {@link HttpEntity} to the entity.
-	 *
-	 * @param key
-	 *            The key to add
-	 * @param value
-	 *            The {@link HttpEntity} part to add
-	 */
-	public void addFilePart(String key, String filename, HttpEntity value)
-	{
-		addStartingBoundary();
-
-		try
-		{
-			StringBuffer fileRes = new StringBuffer();
-			fileRes.append("Content-Disposition: form-data; name=\"").append(key)
-					.append("\"; filename=\"").append(filename).append("\"\r\n")
-					.append("Content-Type: ").append(value.getContentType().getValue()).append("\r\n\r\n");
-
-			out.write(fileRes.toString().getBytes());
-			BufferedInputStream stream = new BufferedInputStream(value.getContent(), 8192);
-			byte[] buffer = new byte[8192];
-			int len = 0;
-
-			while ((len = stream.read(buffer)) > -1)
-			{
-				out.write(buffer, 0, len);
-			}
-
-			out.write(("\r\n--" + boundary).getBytes());
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-	}
-
-	@Override public long getContentLength()
+	@Deprecated public void addPart(String key, HttpEntity value)
 	{
 		try
 		{
-			if (!hasEndingPart)
-			{
-				out.write(("--\r\n").getBytes());
-				hasEndingPart = true;
-			}
+			addPart(key, new InputStreamBody(value.getContent(), key));
 		}
 		catch (Exception e)
 		{
 			e.printStackTrace();
 		}
-
-		return out.size();
 	}
 
-	@Override public Header getContentType()
+	/**
+	 * Adds a new file based {@link HttpEntity} to the entity.
+	 *
+	 * @deprecated Use {@link addFilePart(String, ContentBody} instead
+	 * @param key
+	 *            The key to add
+	 * @param value
+	 *            The {@link HttpEntity} part to add
+	 */
+	@Deprecated public void addFilePart(String key, FileEntity value)
 	{
-		return new BasicHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
-	}
-
-	@Override public boolean isChunked()
-	{
-		return false;
-	}
-
-	@Override public boolean isRepeatable()
-	{
-		return false;
-	}
-
-	@Override public boolean isStreaming()
-	{
-		return false;
-	}
-
-	@Override public void writeTo(OutputStream outstream) throws IOException
-	{
-		if (!hasEndingPart)
+		try
 		{
-			out.write(("--\r\n").getBytes());
-			hasEndingPart = true;
+			addFilePart(key, "untitled", value);
 		}
-
-		outstream.write(out.toByteArray());
-	}
-
-	@Override public Header getContentEncoding()
-	{
-		return null;
-	}
-
-	@Override public void consumeContent() throws IOException, UnsupportedOperationException
-	{
-		if (isStreaming())
+		catch (Exception e)
 		{
-			throw new UnsupportedOperationException("Streaming entity does not implement #consumeContent()");
+			e.printStackTrace();
 		}
 	}
 
-	@Override public InputStream getContent() throws IOException, UnsupportedOperationException
+	/**
+	 * Adds a new file based {@link HttpEntity} to the entity.
+	 *
+	 * @deprecated Use {@link addFilePart(String, ContentBody} instead
+	 * @param key
+	 *            The key to add
+	 * @param value
+	 *            The {@link HttpEntity} part to add
+	 */
+	@Deprecated public void addFilePart(String key, String filename, FileEntity value)
 	{
-		if (!hasEndingPart)
+		try
 		{
-			out.write(("--\r\n").getBytes());
-			hasEndingPart = true;
+			addPart(key, new InputStreamBody(value.getContent(), filename));
 		}
-
-		return new ByteArrayInputStream(out.toByteArray());
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 }

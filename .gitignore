@@ -2,3 +2,4 @@
 proguard-project.txt
 /bin
 /gen
+org.eclipse.jdt.core.prefs

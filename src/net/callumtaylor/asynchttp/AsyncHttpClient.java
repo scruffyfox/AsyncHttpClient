@@ -1,11 +1,9 @@
 package net.callumtaylor.asynchttp;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -22,11 +20,24 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
+import net.callumtaylor.asynchttp.obj.entity.ProgressEntityWrapper;
+import net.callumtaylor.asynchttp.obj.entity.ProgressEntityWrapper.ProgressListener;
 import net.callumtaylor.asynchttp.response.AsyncHttpResponseHandler;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.protocol.HttpContext;
 
 import android.annotation.TargetApi;
 import android.net.Uri;
@@ -856,145 +867,80 @@ public class AsyncHttpClient
 		{
 			try
 			{
-				URL url = new URL(requestUri.toString());
-
 				if (this.response != null)
 				{
 					this.response.getConnectionInfo().connectionUrl = requestUri.toString();
 				}
 
-				if (Build.VERSION.SDK_INT < Build.VERSION_CODES.FROYO)
-				{
-					System.setProperty("http.keepAlive", "false");
-				}
+				System.setProperty("http.keepAlive", "false");
 
-				HttpURLConnection conn;
-				if (url.getHost().equalsIgnoreCase("https"))
-				{
-					conn = (HttpsURLConnection)url.openConnection();
-				}
-				else
-				{
-					conn = (HttpURLConnection)url.openConnection();
-				}
-
-				conn.setRequestProperty("User-Agent", USER_AGENT);
-				conn.setRequestProperty("Connection", "close");
-				conn.setConnectTimeout((int)requestTimeout);
-				conn.setReadTimeout((int)requestTimeout);
-				conn.setFollowRedirects(true);
-				conn.setUseCaches(false);
+				HttpClient httpClient = new DefaultHttpClient();
+				HttpContext httpContext = new BasicHttpContext();
+				HttpRequestBase request = null;
 
 				if (requestMode == RequestMode.GET)
 				{
-					conn.setRequestMethod("GET");
-					conn.setDoInput(true);
+					request = new HttpGet(requestUri.toString());
 				}
 				else if (requestMode == RequestMode.POST)
 				{
-					conn.setRequestMethod("POST");
-					conn.setDoInput(true);
-					conn.setDoOutput(true);
+					request = new HttpPost(requestUri.toString());
 				}
 				else if (requestMode == RequestMode.PUT)
 				{
-					conn.setRequestMethod("PUT");
-					conn.setDoInput(true);
-					conn.setDoOutput(true);
+					request = new HttpPut(requestUri.toString());
 				}
 				else if (requestMode == RequestMode.DELETE)
 				{
-					conn.setRequestMethod("DELETE");
-					conn.setDoInput(true);
+					request = new HttpDelete(requestUri.toString());
 				}
+
+				request.setHeader("Connection", "close");
 
 				if (postData != null)
 				{
-					conn.setRequestProperty(postData.getContentType().getName(), postData.getContentType().getValue());
+					request.setHeader(postData.getContentType().getName(), postData.getContentType().getValue());
 				}
 
 				if (requestHeaders != null)
 				{
 					for (Header header : requestHeaders)
 					{
-						conn.setRequestProperty(header.getName(), header.getValue());
+						request.setHeader(header.getName(), header.getValue());
 					}
 				}
 
 				if ((requestMode == RequestMode.POST || requestMode == RequestMode.PUT) && postData != null)
 				{
-					long contentLength = postData.getContentLength();
-					//conn.setFixedLengthStreamingMode((int)contentLength);
-					//conn.connect();
-
+					final long contentLength = postData.getContentLength();
 					if (this.response != null && !isCancelled())
 					{
 						this.response.getConnectionInfo().connectionLength = contentLength;
 					}
 
-					BufferedInputStream content = new BufferedInputStream(postData.getContent(), BUFFER_SIZE);
-					BufferedOutputStream wr = new BufferedOutputStream(conn.getOutputStream(), BUFFER_SIZE);
-
-					int bytesAvailable = content.available();
-					int bufferSize = Math.min(bytesAvailable, BUFFER_SIZE);
-					byte[] buffer = new byte[bufferSize];
-					int writeCount = 0;
-					int len = 0;
-
-					int bytesRead = len = content.read(buffer, 0, bufferSize);
-
-					while (bytesRead > 0)
+					((HttpEntityEnclosingRequestBase)request).setEntity(new ProgressEntityWrapper(postData, new ProgressListener()
 					{
-						if (this.response != null)
+						@Override public void onBytesTransferred(byte[] buffer, int len, long transferred)
 						{
-							this.response.onPublishedUploadProgress(buffer, len, contentLength);
-							this.response.onPublishedUploadProgress(buffer, len, writeCount, contentLength);
+							if (response != null)
+							{
+								response.onPublishedUploadProgress(buffer, len, contentLength);
+								response.onPublishedUploadProgress(buffer, len, transferred, contentLength);
 
-							publishProgress(new Packet(writeCount, contentLength, false));
+								publishProgress(new Packet(transferred, contentLength, false));
+							}
 						}
-
-						wr.write(buffer, 0, bufferSize);
-						writeCount += bufferSize;
-						bytesAvailable = content.available();
-						bufferSize = Math.min(bytesAvailable, BUFFER_SIZE);
-						bytesRead = len = content.read(buffer, 0, bufferSize);
-
-						wr.flush();
-					}
-
-					if (this.response != null && !isCancelled())
-					{
-						publishProgress(new Packet(writeCount, contentLength, false));
-					}
-
-					content.close();
-					wr.close();
-				}
-				else
-				{
-					conn.connect();
-				}
-
-				if (response != null)
-				{
-					response.getConnectionInfo().responseHeaders = conn.getHeaderFields();
+					}));
 				}
 
 				// Get the response
-				InputStream i;
-				int responseCode = getResponseCode(conn);
+				HttpResponse response = httpClient.execute(request, httpContext);
+				String encoding = response.getEntity().getContentEncoding() == null ? "" : response.getEntity().getContentEncoding().getValue();
+				int responseCode = response.getStatusLine().getStatusCode();
+				long contentLength = response.getEntity().getContentLength();
+				InputStream i = response.getEntity().getContent();
 
-				//if ((responseCode / 100) == 2)
-				if (responseCode < 400)
-				{
-					i = conn.getInputStream();
-				}
-				else
-				{
-					i = conn.getErrorStream();
-				}
-
-				if ("gzip".equals(conn.getContentEncoding()))
+				if ("gzip".equals(encoding))
 				{
 					i = new GZIPInputStream(new BufferedInputStream(i, BUFFER_SIZE));
 				}
@@ -1010,21 +956,20 @@ public class AsyncHttpClient
 
 				try
 				{
-					if (conn.getContentLength() != 0)
+					if (contentLength != 0)
 					{
-						InputStream is = new BufferedInputStream(i, BUFFER_SIZE);
 						byte[] buffer = new byte[BUFFER_SIZE];
 
 						int len = 0;
 						int readCount = 0;
-						while ((len = is.read(buffer)) > -1 && !isCancelled())
+						while ((len = i.read(buffer)) > -1 && !isCancelled())
 						{
 							if (this.response != null)
 							{
-								this.response.onPublishedDownloadProgress(buffer, len, conn.getContentLength());
-								this.response.onPublishedDownloadProgress(buffer, len, readCount, conn.getContentLength());
+								this.response.onPublishedDownloadProgress(buffer, len, contentLength);
+								this.response.onPublishedDownloadProgress(buffer, len, readCount, contentLength);
 
-								publishProgress(new Packet(readCount, conn.getContentLength(), true));
+								publishProgress(new Packet(readCount, contentLength, true));
 							}
 
 							readCount += len;
@@ -1038,16 +983,15 @@ public class AsyncHttpClient
 							this.response.onPublishedDownloadProgress(null, readCount, readCount);
 							this.response.onPublishedDownloadProgress(null, readCount, readCount, readCount);
 
-							publishProgress(new Packet(readCount, conn.getContentLength(), true));
+							publishProgress(new Packet(readCount, contentLength, true));
 						}
 
-						is.close();
 						i.close();
-						conn.disconnect();
 					}
 				}
 				catch (Exception e)
 				{
+					e.printStackTrace();
 					// for no-content responses
 				}
 
