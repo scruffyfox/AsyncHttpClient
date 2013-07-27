@@ -2,21 +2,26 @@ package net.callumtaylor.asynchttp;
 
 import java.io.BufferedInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.security.KeyManagementException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
@@ -27,6 +32,7 @@ import net.callumtaylor.asynchttp.response.AsyncHttpResponseHandler;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
@@ -35,9 +41,20 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.conn.params.ConnManagerPNames;
+import org.apache.http.conn.params.ConnPerRouteBean;
+import org.apache.http.conn.scheme.LayeredSocketFactory;
+import org.apache.http.conn.scheme.PlainSocketFactory;
+import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
+import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 
@@ -185,6 +202,7 @@ public class AsyncHttpClient
 	private ClientExecutorTask executorTask;
 	private Uri requestUri;
 	private long requestTimeout = 0L;
+	private boolean allowAllSsl = false;
 
 	private static final String USER_AGENT;
 	static
@@ -222,6 +240,11 @@ public class AsyncHttpClient
 		{
 			return this.canonicalStr;
 		}
+	}
+
+	public void setAllowAllSsl(boolean allow)
+	{
+		this.allowAllSsl = allow;
 	}
 
 	/**
@@ -867,6 +890,31 @@ public class AsyncHttpClient
 
 		@Override protected Void doInBackground(Void... params)
 		{
+			HttpClient httpClient;
+
+			if (allowAllSsl)
+			{
+				SchemeRegistry schemeRegistry = new SchemeRegistry();
+				schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
+				schemeRegistry.register(new Scheme("https", new EasySSLSocketFactory(), 443));
+
+				HttpParams httpParams = new BasicHttpParams();
+				httpParams.setParameter(ConnManagerPNames.MAX_TOTAL_CONNECTIONS, 30);
+				httpParams.setParameter(ConnManagerPNames.MAX_CONNECTIONS_PER_ROUTE, new ConnPerRouteBean(30));
+				httpParams.setParameter(HttpProtocolParams.USE_EXPECT_CONTINUE, false);
+				HttpProtocolParams.setVersion(httpParams, HttpVersion.HTTP_1_1);
+
+				ClientConnectionManager cm = new ThreadSafeClientConnManager(httpParams, schemeRegistry);
+				httpClient = new DefaultHttpClient(cm, httpParams);
+			}
+			else
+			{
+				httpClient = new DefaultHttpClient();
+			}
+
+			HttpContext httpContext = new BasicHttpContext();
+			HttpRequestBase request = null;
+
 			try
 			{
 				if (this.response != null)
@@ -875,10 +923,6 @@ public class AsyncHttpClient
 				}
 
 				System.setProperty("http.keepAlive", "false");
-
-				HttpClient httpClient = new DefaultHttpClient();
-				HttpContext httpContext = new BasicHttpContext();
-				HttpRequestBase request = null;
 
 				if (requestMode == RequestMode.GET)
 				{
@@ -994,10 +1038,13 @@ public class AsyncHttpClient
 						i.close();
 					}
 				}
+				catch (SocketTimeoutException timeout)
+				{
+					responseCode = 0;
+				}
 				catch (Exception e)
 				{
 					e.printStackTrace();
-					// for no-content responses
 				}
 
 				if (this.response != null && !isCancelled())
@@ -1057,68 +1104,148 @@ public class AsyncHttpClient
 		}
 	}
 
-	/**
-	 * You can use this class to allow untrusted SSL sites
-	 */
-	public static class TrustManagerManipulator implements X509TrustManager
+	private class EasyX509TrustManager implements X509TrustManager
 	{
-		private static TrustManager[] trustManagers;
-		private static final X509Certificate[] acceptedIssuers = new X509Certificate[]{};
+		private X509TrustManager standardTrustManager = null;
 
-		public boolean isClientTrusted(X509Certificate[] chain)
+		/**
+		 * Constructor for EasyX509TrustManager.
+		 */
+		public EasyX509TrustManager(KeyStore keystore) throws NoSuchAlgorithmException, KeyStoreException
 		{
-			return true;
-		}
-
-		public boolean isServerTrusted(X509Certificate[] chain)
-		{
-			return true;
-		}
-
-		public static void allowAllSSL()
-		{
-			HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier()
+			super();
+			TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+			factory.init(keystore);
+			TrustManager[] trustmanagers = factory.getTrustManagers();
+			if (trustmanagers.length == 0)
 			{
-				@Override public boolean verify(String hostname, SSLSession session)
-				{
-					return true;
-				}
-			});
-
-			SSLContext context = null;
-
-			if (trustManagers == null)
-			{
-				trustManagers = new TrustManager[]{new TrustManagerManipulator()};
+				throw new NoSuchAlgorithmException("no trust manager found");
 			}
-			try
-			{
-				context = SSLContext.getInstance("TLS");
-				context.init(null, trustManagers, new SecureRandom());
-			}
-			catch (NoSuchAlgorithmException e)
-			{
-				e.printStackTrace();
-			}
-			catch (KeyManagementException e)
-			{
-				e.printStackTrace();
-			}
-
-			HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
+			this.standardTrustManager = (X509TrustManager)trustmanagers[0];
 		}
 
-		@Override public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException
+		/**
+		 * @see
+		 *      javax.net.ssl.X509TrustManager#checkClientTrusted(X509Certificate
+		 *      [],String authType)
+		 */
+		@Override public void checkClientTrusted(X509Certificate[] certificates, String authType) throws CertificateException
 		{
+			standardTrustManager.checkClientTrusted(certificates, authType);
 		}
 
-		@Override public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException
+		/**
+		 * @see
+		 *      javax.net.ssl.X509TrustManager#checkServerTrusted(X509Certificate
+		 *      [],String authType)
+		 */
+		@Override public void checkServerTrusted(X509Certificate[] certificates, String authType) throws CertificateException
 		{
+			if ((certificates != null) && (certificates.length == 1))
+			{
+				certificates[0].checkValidity();
+			}
+			else
+			{
+				standardTrustManager.checkServerTrusted(certificates, authType);
+			}
 		}
 
+		/**
+		 * @see javax.net.ssl.X509TrustManager#getAcceptedIssuers()
+		 */
 		@Override public X509Certificate[] getAcceptedIssuers()
 		{
-			return acceptedIssuers;
+			return this.standardTrustManager.getAcceptedIssuers();
+		}
+	}
+
+	private class EasySSLSocketFactory implements LayeredSocketFactory
+	{
+		private SSLContext sslcontext = null;
+
+		private SSLContext createEasySSLContext() throws IOException
+		{
+			try
+			{
+				SSLContext context = SSLContext.getInstance("TLS");
+				context.init(null, new TrustManager[]{new EasyX509TrustManager(null)}, null);
+				return context;
+			}
+			catch (Exception e)
+			{
+				throw new IOException(e.getMessage());
+			}
+		}
+
+		private SSLContext getSSLContext() throws IOException
+		{
+			if (this.sslcontext == null)
+			{
+				this.sslcontext = createEasySSLContext();
+			}
+			return this.sslcontext;
+		}
+
+		@Override public Socket connectSocket(Socket sock, String host, int port, InetAddress localAddress, int localPort, HttpParams params) throws IOException, UnknownHostException, ConnectTimeoutException
+		{
+			int connTimeout = HttpConnectionParams.getConnectionTimeout(params);
+			int soTimeout = HttpConnectionParams.getSoTimeout(params);
+
+			InetSocketAddress remoteAddress = new InetSocketAddress(host, port);
+			SSLSocket sslsock = (SSLSocket)((sock != null) ? sock : createSocket());
+
+			if ((localAddress != null) || (localPort > 0))
+			{
+				// we need to bind explicitly
+				if (localPort < 0)
+				{
+					localPort = 0; // indicates "any"
+				}
+
+				InetSocketAddress isa = new InetSocketAddress(localAddress, localPort);
+				sslsock.bind(isa);
+			}
+
+			sslsock.connect(remoteAddress, connTimeout);
+			sslsock.setSoTimeout(soTimeout);
+			return sslsock;
+
+		}
+
+		/**
+		 * @see org.apache.http.conn.scheme.SocketFactory#createSocket()
+		 */
+		@Override public Socket createSocket() throws IOException
+		{
+			return getSSLContext().getSocketFactory().createSocket();
+		}
+
+		/**
+		 * @see org.apache.http.conn.scheme.SocketFactory#isSecure(java.net.Socket)
+		 */
+		@Override public boolean isSecure(Socket socket) throws IllegalArgumentException
+		{
+			return true;
+		}
+
+		/**
+		 * @see org.apache.http.conn.scheme.LayeredSocketFactory#createSocket(java.net.Socket,
+		 *      java.lang.String, int, boolean)
+		 */
+		@Override public Socket createSocket(Socket socket, String host, int port, boolean autoClose) throws IOException, UnknownHostException
+		{
+			return getSSLContext().getSocketFactory().createSocket(socket, host, port, autoClose);
+		}
+
+		@Override public boolean equals(Object obj)
+		{
+			return ((obj != null) && obj.getClass().equals(EasySSLSocketFactory.class));
+		}
+
+		@Override public int hashCode()
+		{
+			return EasySSLSocketFactory.class.hashCode();
 		}
 	}
 }
