@@ -860,7 +860,7 @@ public class AsyncHttpClient
 
 	private class ClientExecutorTask extends AsyncTask<Void, Packet, Void>
 	{
-		private static final int BUFFER_SIZE = 1 * 1024 * 512;
+		private static final int BUFFER_SIZE = 1 * 1024 * 8;
 
 		private final AsyncHttpResponseHandler response;
 		private final Uri requestUri;
