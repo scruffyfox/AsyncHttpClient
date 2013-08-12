@@ -1,32 +1,62 @@
 package net.callumtaylor.asynchttp;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
-import java.security.KeyManagementException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
+import net.callumtaylor.asynchttp.obj.entity.ProgressEntityWrapper;
+import net.callumtaylor.asynchttp.obj.entity.ProgressEntityWrapper.ProgressListener;
 import net.callumtaylor.asynchttp.response.AsyncHttpResponseHandler;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.conn.params.ConnManagerPNames;
+import org.apache.http.conn.params.ConnPerRouteBean;
+import org.apache.http.conn.scheme.LayeredSocketFactory;
+import org.apache.http.conn.scheme.PlainSocketFactory;
+import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+import org.apache.http.params.HttpProtocolParams;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.protocol.HttpContext;
 
 import android.annotation.TargetApi;
 import android.net.Uri;
@@ -172,6 +202,7 @@ public class AsyncHttpClient
 	private ClientExecutorTask executorTask;
 	private Uri requestUri;
 	private long requestTimeout = 0L;
+	private boolean allowAllSsl = false;
 
 	private static final String USER_AGENT;
 	static
@@ -209,6 +240,11 @@ public class AsyncHttpClient
 		{
 			return this.canonicalStr;
 		}
+	}
+
+	public void setAllowAllSsl(boolean allow)
+	{
+		this.allowAllSsl = allow;
 	}
 
 	/**
@@ -824,7 +860,7 @@ public class AsyncHttpClient
 
 	private class ClientExecutorTask extends AsyncTask<Void, Packet, Void>
 	{
-		private static final int BUFFER_SIZE = 1 * 1024 * 512;
+		private static final int BUFFER_SIZE = 1 * 1024 * 8;
 
 		private final AsyncHttpResponseHandler response;
 		private final Uri requestUri;
@@ -854,147 +890,106 @@ public class AsyncHttpClient
 
 		@Override protected Void doInBackground(Void... params)
 		{
+			HttpClient httpClient;
+
+			if (allowAllSsl)
+			{
+				SchemeRegistry schemeRegistry = new SchemeRegistry();
+				schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
+				schemeRegistry.register(new Scheme("https", new EasySSLSocketFactory(), 443));
+
+				HttpParams httpParams = new BasicHttpParams();
+				httpParams.setParameter(ConnManagerPNames.MAX_TOTAL_CONNECTIONS, 30);
+				httpParams.setParameter(ConnManagerPNames.MAX_CONNECTIONS_PER_ROUTE, new ConnPerRouteBean(30));
+				httpParams.setParameter(HttpProtocolParams.USE_EXPECT_CONTINUE, false);
+				HttpProtocolParams.setVersion(httpParams, HttpVersion.HTTP_1_1);
+
+				ClientConnectionManager cm = new ThreadSafeClientConnManager(httpParams, schemeRegistry);
+				httpClient = new DefaultHttpClient(cm, httpParams);
+			}
+			else
+			{
+				httpClient = new DefaultHttpClient();
+			}
+
+			HttpContext httpContext = new BasicHttpContext();
+			HttpRequestBase request = null;
+
 			try
 			{
-				URL url = new URL(requestUri.toString());
-
 				if (this.response != null)
 				{
 					this.response.getConnectionInfo().connectionUrl = requestUri.toString();
 				}
 
-				if (Build.VERSION.SDK_INT < Build.VERSION_CODES.FROYO)
-				{
-					System.setProperty("http.keepAlive", "false");
-				}
-
-				HttpURLConnection conn;
-				if (url.getHost().equalsIgnoreCase("https"))
-				{
-					conn = (HttpsURLConnection)url.openConnection();
-				}
-				else
-				{
-					conn = (HttpURLConnection)url.openConnection();
-				}
-
-				conn.setRequestProperty("User-Agent", USER_AGENT);
-				conn.setRequestProperty("Connection", "close");
-				conn.setConnectTimeout((int)requestTimeout);
-				conn.setReadTimeout((int)requestTimeout);
-				conn.setFollowRedirects(true);
-				conn.setUseCaches(false);
+				System.setProperty("http.keepAlive", "false");
 
 				if (requestMode == RequestMode.GET)
 				{
-					conn.setRequestMethod("GET");
-					conn.setDoInput(true);
+					request = new HttpGet(requestUri.toString());
 				}
 				else if (requestMode == RequestMode.POST)
 				{
-					conn.setRequestMethod("POST");
-					conn.setDoInput(true);
-					conn.setDoOutput(true);
+					request = new HttpPost(requestUri.toString());
 				}
 				else if (requestMode == RequestMode.PUT)
 				{
-					conn.setRequestMethod("PUT");
-					conn.setDoInput(true);
-					conn.setDoOutput(true);
+					request = new HttpPut(requestUri.toString());
 				}
 				else if (requestMode == RequestMode.DELETE)
 				{
-					conn.setRequestMethod("DELETE");
-					conn.setDoInput(true);
+					request = new HttpDelete(requestUri.toString());
 				}
+
+				HttpParams p = httpClient.getParams();
+				HttpConnectionParams.setConnectionTimeout(p, (int)requestTimeout);
+				HttpConnectionParams.setSoTimeout(p, (int)requestTimeout);
+				request.setHeader("Connection", "close");
 
 				if (postData != null)
 				{
-					conn.setRequestProperty(postData.getContentType().getName(), postData.getContentType().getValue());
+					request.setHeader(postData.getContentType().getName(), postData.getContentType().getValue());
 				}
 
 				if (requestHeaders != null)
 				{
 					for (Header header : requestHeaders)
 					{
-						conn.setRequestProperty(header.getName(), header.getValue());
+						request.setHeader(header.getName(), header.getValue());
 					}
 				}
 
 				if ((requestMode == RequestMode.POST || requestMode == RequestMode.PUT) && postData != null)
 				{
-					long contentLength = postData.getContentLength();
-					//conn.setFixedLengthStreamingMode((int)contentLength);
-					//conn.connect();
-
+					final long contentLength = postData.getContentLength();
 					if (this.response != null && !isCancelled())
 					{
 						this.response.getConnectionInfo().connectionLength = contentLength;
 					}
 
-					BufferedInputStream content = new BufferedInputStream(postData.getContent(), BUFFER_SIZE);
-					BufferedOutputStream wr = new BufferedOutputStream(conn.getOutputStream(), BUFFER_SIZE);
-
-					int bytesAvailable = content.available();
-					int bufferSize = Math.min(bytesAvailable, BUFFER_SIZE);
-					byte[] buffer = new byte[bufferSize];
-					int writeCount = 0;
-					int len = 0;
-
-					int bytesRead = len = content.read(buffer, 0, bufferSize);
-
-					while (bytesRead > 0)
+					((HttpEntityEnclosingRequestBase)request).setEntity(new ProgressEntityWrapper(postData, new ProgressListener()
 					{
-						if (this.response != null)
+						@Override public void onBytesTransferred(byte[] buffer, int len, long transferred)
 						{
-							this.response.onPublishedUploadProgress(buffer, len, contentLength);
-							this.response.onPublishedUploadProgress(buffer, len, writeCount, contentLength);
+							if (response != null)
+							{
+								response.onPublishedUploadProgress(buffer, len, contentLength);
+								response.onPublishedUploadProgress(buffer, len, transferred, contentLength);
 
-							publishProgress(new Packet(writeCount, contentLength, false));
+								publishProgress(new Packet(transferred, contentLength, false));
+							}
 						}
-
-						wr.write(buffer, 0, bufferSize);
-						writeCount += bufferSize;
-						bytesAvailable = content.available();
-						bufferSize = Math.min(bytesAvailable, BUFFER_SIZE);
-						bytesRead = len = content.read(buffer, 0, bufferSize);
-
-						wr.flush();
-					}
-
-					if (this.response != null && !isCancelled())
-					{
-						publishProgress(new Packet(writeCount, contentLength, false));
-					}
-
-					content.close();
-					wr.close();
-				}
-				else
-				{
-					conn.connect();
-				}
-
-				if (response != null)
-				{
-					response.getConnectionInfo().responseHeaders = conn.getHeaderFields();
+					}));
 				}
 
 				// Get the response
-				InputStream i;
-				int responseCode = getResponseCode(conn);
+				HttpResponse response = httpClient.execute(request, httpContext);
+				String encoding = response.getEntity().getContentEncoding() == null ? "" : response.getEntity().getContentEncoding().getValue();
+				int responseCode = response.getStatusLine().getStatusCode();
+				long contentLength = response.getEntity().getContentLength();
+				InputStream i = response.getEntity().getContent();
 
-				//if ((responseCode / 100) == 2)
-				if (responseCode < 400)
-				{
-					i = conn.getInputStream();
-				}
-				else
-				{
-					i = conn.getErrorStream();
-				}
-
-				if ("gzip".equals(conn.getContentEncoding()))
+				if ("gzip".equals(encoding))
 				{
 					i = new GZIPInputStream(new BufferedInputStream(i, BUFFER_SIZE));
 				}
@@ -1010,21 +1005,20 @@ public class AsyncHttpClient
 
 				try
 				{
-					if (conn.getContentLength() != 0)
+					if (contentLength != 0)
 					{
-						InputStream is = new BufferedInputStream(i, BUFFER_SIZE);
 						byte[] buffer = new byte[BUFFER_SIZE];
 
 						int len = 0;
 						int readCount = 0;
-						while ((len = is.read(buffer)) > -1 && !isCancelled())
+						while ((len = i.read(buffer)) > -1 && !isCancelled())
 						{
 							if (this.response != null)
 							{
-								this.response.onPublishedDownloadProgress(buffer, len, conn.getContentLength());
-								this.response.onPublishedDownloadProgress(buffer, len, readCount, conn.getContentLength());
+								this.response.onPublishedDownloadProgress(buffer, len, contentLength);
+								this.response.onPublishedDownloadProgress(buffer, len, readCount, contentLength);
 
-								publishProgress(new Packet(readCount, conn.getContentLength(), true));
+								publishProgress(new Packet(readCount, contentLength, true));
 							}
 
 							readCount += len;
@@ -1038,17 +1032,19 @@ public class AsyncHttpClient
 							this.response.onPublishedDownloadProgress(null, readCount, readCount);
 							this.response.onPublishedDownloadProgress(null, readCount, readCount, readCount);
 
-							publishProgress(new Packet(readCount, conn.getContentLength(), true));
+							publishProgress(new Packet(readCount, contentLength, true));
 						}
 
-						is.close();
 						i.close();
-						conn.disconnect();
 					}
+				}
+				catch (SocketTimeoutException timeout)
+				{
+					responseCode = 0;
 				}
 				catch (Exception e)
 				{
-					// for no-content responses
+					e.printStackTrace();
 				}
 
 				if (this.response != null && !isCancelled())
@@ -1108,68 +1104,148 @@ public class AsyncHttpClient
 		}
 	}
 
-	/**
-	 * You can use this class to allow untrusted SSL sites
-	 */
-	public static class TrustManagerManipulator implements X509TrustManager
+	private class EasyX509TrustManager implements X509TrustManager
 	{
-		private static TrustManager[] trustManagers;
-		private static final X509Certificate[] acceptedIssuers = new X509Certificate[]{};
+		private X509TrustManager standardTrustManager = null;
 
-		public boolean isClientTrusted(X509Certificate[] chain)
+		/**
+		 * Constructor for EasyX509TrustManager.
+		 */
+		public EasyX509TrustManager(KeyStore keystore) throws NoSuchAlgorithmException, KeyStoreException
 		{
-			return true;
-		}
-
-		public boolean isServerTrusted(X509Certificate[] chain)
-		{
-			return true;
-		}
-
-		public static void allowAllSSL()
-		{
-			HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier()
+			super();
+			TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+			factory.init(keystore);
+			TrustManager[] trustmanagers = factory.getTrustManagers();
+			if (trustmanagers.length == 0)
 			{
-				@Override public boolean verify(String hostname, SSLSession session)
-				{
-					return true;
-				}
-			});
-
-			SSLContext context = null;
-
-			if (trustManagers == null)
-			{
-				trustManagers = new TrustManager[]{new TrustManagerManipulator()};
+				throw new NoSuchAlgorithmException("no trust manager found");
 			}
-			try
-			{
-				context = SSLContext.getInstance("TLS");
-				context.init(null, trustManagers, new SecureRandom());
-			}
-			catch (NoSuchAlgorithmException e)
-			{
-				e.printStackTrace();
-			}
-			catch (KeyManagementException e)
-			{
-				e.printStackTrace();
-			}
-
-			HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
+			this.standardTrustManager = (X509TrustManager)trustmanagers[0];
 		}
 
-		@Override public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException
+		/**
+		 * @see
+		 *      javax.net.ssl.X509TrustManager#checkClientTrusted(X509Certificate
+		 *      [],String authType)
+		 */
+		@Override public void checkClientTrusted(X509Certificate[] certificates, String authType) throws CertificateException
 		{
+			standardTrustManager.checkClientTrusted(certificates, authType);
 		}
 
-		@Override public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException
+		/**
+		 * @see
+		 *      javax.net.ssl.X509TrustManager#checkServerTrusted(X509Certificate
+		 *      [],String authType)
+		 */
+		@Override public void checkServerTrusted(X509Certificate[] certificates, String authType) throws CertificateException
 		{
+			if ((certificates != null) && (certificates.length == 1))
+			{
+				certificates[0].checkValidity();
+			}
+			else
+			{
+				standardTrustManager.checkServerTrusted(certificates, authType);
+			}
 		}
 
+		/**
+		 * @see javax.net.ssl.X509TrustManager#getAcceptedIssuers()
+		 */
 		@Override public X509Certificate[] getAcceptedIssuers()
 		{
-			return acceptedIssuers;
+			return this.standardTrustManager.getAcceptedIssuers();
+		}
+	}
+
+	private class EasySSLSocketFactory implements LayeredSocketFactory
+	{
+		private SSLContext sslcontext = null;
+
+		private SSLContext createEasySSLContext() throws IOException
+		{
+			try
+			{
+				SSLContext context = SSLContext.getInstance("TLS");
+				context.init(null, new TrustManager[]{new EasyX509TrustManager(null)}, null);
+				return context;
+			}
+			catch (Exception e)
+			{
+				throw new IOException(e.getMessage());
+			}
+		}
+
+		private SSLContext getSSLContext() throws IOException
+		{
+			if (this.sslcontext == null)
+			{
+				this.sslcontext = createEasySSLContext();
+			}
+			return this.sslcontext;
+		}
+
+		@Override public Socket connectSocket(Socket sock, String host, int port, InetAddress localAddress, int localPort, HttpParams params) throws IOException, UnknownHostException, ConnectTimeoutException
+		{
+			int connTimeout = HttpConnectionParams.getConnectionTimeout(params);
+			int soTimeout = HttpConnectionParams.getSoTimeout(params);
+
+			InetSocketAddress remoteAddress = new InetSocketAddress(host, port);
+			SSLSocket sslsock = (SSLSocket)((sock != null) ? sock : createSocket());
+
+			if ((localAddress != null) || (localPort > 0))
+			{
+				// we need to bind explicitly
+				if (localPort < 0)
+				{
+					localPort = 0; // indicates "any"
+				}
+
+				InetSocketAddress isa = new InetSocketAddress(localAddress, localPort);
+				sslsock.bind(isa);
+			}
+
+			sslsock.connect(remoteAddress, connTimeout);
+			sslsock.setSoTimeout(soTimeout);
+			return sslsock;
+
+		}
+
+		/**
+		 * @see org.apache.http.conn.scheme.SocketFactory#createSocket()
+		 */
+		@Override public Socket createSocket() throws IOException
+		{
+			return getSSLContext().getSocketFactory().createSocket();
+		}
+
+		/**
+		 * @see org.apache.http.conn.scheme.SocketFactory#isSecure(java.net.Socket)
+		 */
+		@Override public boolean isSecure(Socket socket) throws IllegalArgumentException
+		{
+			return true;
+		}
+
+		/**
+		 * @see org.apache.http.conn.scheme.LayeredSocketFactory#createSocket(java.net.Socket,
+		 *      java.lang.String, int, boolean)
+		 */
+		@Override public Socket createSocket(Socket socket, String host, int port, boolean autoClose) throws IOException, UnknownHostException
+		{
+			return getSSLContext().getSocketFactory().createSocket(socket, host, port, autoClose);
+		}
+
+		@Override public boolean equals(Object obj)
+		{
+			return ((obj != null) && obj.getClass().equals(EasySSLSocketFactory.class));
+		}
+
+		@Override public int hashCode()
+		{
+			return EasySSLSocketFactory.class.hashCode();
 		}
 	}
 }

@@ -4,13 +4,14 @@ import java.io.ByteArrayOutputStream;
 
 public abstract class BinaryResponseHandler extends AsyncHttpResponseHandler
 {
-	ByteArrayOutputStream byteBuffer;
+	private ByteArrayOutputStream byteBuffer;
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
 		if (byteBuffer == null)
 		{
-			byteBuffer = new ByteArrayOutputStream(Math.max(8192, (int)totalLength));
+			int total = (int)(totalLength > Integer.MAX_VALUE ? Integer.MAX_VALUE : totalLength);
+			byteBuffer = new ByteArrayOutputStream(Math.max(8192, total));
 		}
 
 		if (chunk != null)

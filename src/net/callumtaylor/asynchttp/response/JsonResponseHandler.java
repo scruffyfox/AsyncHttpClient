@@ -5,10 +5,16 @@ import com.google.gson.JsonParser;
 
 public abstract class JsonResponseHandler extends AsyncHttpResponseHandler
 {
-	StringBuffer stringBuffer = new StringBuffer();
+	private StringBuffer stringBuffer;
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
+		if (stringBuffer == null)
+		{
+			int total = (int)(totalLength > Integer.MAX_VALUE ? Integer.MAX_VALUE : totalLength);
+			stringBuffer = new StringBuffer(Math.max(8192, total));
+		}
+
 		if (chunk != null)
 		{
 			try
@@ -30,6 +36,6 @@ public abstract class JsonResponseHandler extends AsyncHttpResponseHandler
 	 */
 	@Override public JsonElement getContent()
 	{
-		return new JsonParser().parse(new String(stringBuffer.toString()));
+		return new JsonParser().parse(stringBuffer.toString());
 	}
 }

@@ -2,10 +2,16 @@ package net.callumtaylor.asynchttp.response;
 
 public abstract class StringResponseHandler extends AsyncHttpResponseHandler
 {
-	StringBuffer stringBuffer = new StringBuffer();
+	private StringBuffer stringBuffer;
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
+		if (stringBuffer == null)
+		{
+			int total = (int)(totalLength > Integer.MAX_VALUE ? Integer.MAX_VALUE : totalLength);
+			stringBuffer = new StringBuffer(Math.max(8192, total));
+		}
+
 		if (chunk != null)
 		{
 			try

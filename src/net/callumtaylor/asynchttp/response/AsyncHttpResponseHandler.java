@@ -127,6 +127,8 @@ public abstract class AsyncHttpResponseHandler
 	 * Gets the content generated from the
 	 * response.
 	 *
+	 * You should only call this once
+	 *
 	 * @return The generated content object
 	 */
 	public abstract Object getContent();
