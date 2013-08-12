@@ -117,9 +117,9 @@ In order to download large files, you will need to subclass `AsyncHttpResponseHa
 	headers.add(new BasicHeader("1", "2"));
 	
 	MultiPartEntity entity = new MultiPartEntity();
-	FileEntity data1 = new FileEntity(new File("/IMG_6614.JPG"), "image/jpeg");
+	FileBody data1 = new FileBody(new File("/IMG_6614.JPG"), "image/jpeg");
 	JsonEntity data2 = new JsonEntity("{\"key\":\"value\"}");
-	entity.addFilePart("image1.jpg", data1);
+	entity.addPart("image1.jpg", data1);
 	entity.addPart("content1", data2);
 	
 	client.post("api/v1/", params, entity, headers, new JsonResponseHandler()

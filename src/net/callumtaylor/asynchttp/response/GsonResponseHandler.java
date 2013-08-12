@@ -6,7 +6,7 @@ import com.google.gson.GsonBuilder;
 public abstract class GsonResponseHandler<T extends Class> extends AsyncHttpResponseHandler
 {
 	private T outClass;
-	StringBuffer stringBuffer = new StringBuffer();
+	private StringBuffer stringBuffer;
 
 	public GsonResponseHandler(T outClass)
 	{
@@ -15,6 +15,12 @@ public abstract class GsonResponseHandler<T extends Class> extends AsyncHttpResp
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
+		if (stringBuffer == null)
+		{
+			int total = (int)(totalLength > Integer.MAX_VALUE ? Integer.MAX_VALUE : totalLength);
+			stringBuffer = new StringBuffer(Math.max(8192, total));
+		}
+
 		if (chunk != null)
 		{
 			try
@@ -29,17 +35,18 @@ public abstract class GsonResponseHandler<T extends Class> extends AsyncHttpResp
 	}
 
 	/**
-	 * Processes the response from the stream.
-	 * This is <b>not</b> ran on the UI thread
+	 * Processes the response from the stream. This is <b>not</b> ran on the UI
+	 * thread
 	 *
-	 * @return The data represented as a gson JsonElement primitive type
+	 * @return The data represented as a gson JsonElement primitive type, or a
+	 *         new instance of T if failed to parse Json
 	 */
-	@Override public T getContent()
+	@SuppressWarnings("unchecked") @Override public T getContent()
 	{
 		try
 		{
 			Gson parser = new GsonBuilder().create();
-			return (T)parser.fromJson(new String(stringBuffer.toString()), outClass);
+			return (T)parser.fromJson(stringBuffer.toString(), outClass);
 		}
 		catch (Exception e)
 		{
