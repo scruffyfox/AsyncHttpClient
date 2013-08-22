@@ -984,67 +984,71 @@ public class AsyncHttpClient
 
 				// Get the response
 				HttpResponse response = httpClient.execute(request, httpContext);
-				String encoding = response.getEntity().getContentEncoding() == null ? "" : response.getEntity().getContentEncoding().getValue();
 				int responseCode = response.getStatusLine().getStatusCode();
-				long contentLength = response.getEntity().getContentLength();
-				InputStream i = response.getEntity().getContent();
 
-				if ("gzip".equals(encoding))
+				if (response.getEntity() != null)
 				{
-					i = new GZIPInputStream(new BufferedInputStream(i, BUFFER_SIZE));
-				}
-				else
-				{
-					i = new BufferedInputStream(i, BUFFER_SIZE);
-				}
+					String encoding = response.getEntity().getContentEncoding() == null ? "" : response.getEntity().getContentEncoding().getValue();
+					long contentLength = response.getEntity().getContentLength();
+					InputStream i = response.getEntity().getContent();
 
-				if (this.response != null && !isCancelled())
-				{
-					this.response.getConnectionInfo().responseCode = responseCode;
-				}
-
-				try
-				{
-					if (contentLength != 0)
+					if ("gzip".equals(encoding))
 					{
-						byte[] buffer = new byte[BUFFER_SIZE];
+						i = new GZIPInputStream(new BufferedInputStream(i, BUFFER_SIZE));
+					}
+					else
+					{
+						i = new BufferedInputStream(i, BUFFER_SIZE);
+					}
 
-						int len = 0;
-						int readCount = 0;
-						while ((len = i.read(buffer)) > -1 && !isCancelled())
+					if (this.response != null && !isCancelled())
+					{
+						this.response.getConnectionInfo().responseCode = responseCode;
+					}
+
+					try
+					{
+						if (contentLength != 0)
 						{
-							if (this.response != null)
+							byte[] buffer = new byte[BUFFER_SIZE];
+
+							int len = 0;
+							int readCount = 0;
+							while ((len = i.read(buffer)) > -1 && !isCancelled())
 							{
-								this.response.onPublishedDownloadProgress(buffer, len, contentLength);
-								this.response.onPublishedDownloadProgress(buffer, len, readCount, contentLength);
+								if (this.response != null)
+								{
+									this.response.onPublishedDownloadProgress(buffer, len, contentLength);
+									this.response.onPublishedDownloadProgress(buffer, len, readCount, contentLength);
+
+									publishProgress(new Packet(readCount, contentLength, true));
+								}
+
+								readCount += len;
+							}
+
+							if (this.response != null && !isCancelled())
+							{
+								this.response.getConnectionInfo().responseLength = readCount;
+
+								// we fake the content length, because it can be -1
+								this.response.onPublishedDownloadProgress(null, readCount, readCount);
+								this.response.onPublishedDownloadProgress(null, readCount, readCount, readCount);
 
 								publishProgress(new Packet(readCount, contentLength, true));
 							}
 
-							readCount += len;
+							i.close();
 						}
-
-						if (this.response != null && !isCancelled())
-						{
-							this.response.getConnectionInfo().responseLength = readCount;
-
-							// we fake the content length, because it can be -1
-							this.response.onPublishedDownloadProgress(null, readCount, readCount);
-							this.response.onPublishedDownloadProgress(null, readCount, readCount, readCount);
-
-							publishProgress(new Packet(readCount, contentLength, true));
-						}
-
-						i.close();
 					}
-				}
-				catch (SocketTimeoutException timeout)
-				{
-					responseCode = 0;
-				}
-				catch (Exception e)
-				{
-					e.printStackTrace();
+					catch (SocketTimeoutException timeout)
+					{
+						responseCode = 0;
+					}
+					catch (Exception e)
+					{
+						e.printStackTrace();
+					}
 				}
 
 				if (this.response != null && !isCancelled())
