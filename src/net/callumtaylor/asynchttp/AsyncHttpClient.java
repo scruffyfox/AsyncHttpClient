@@ -882,6 +882,7 @@ public class AsyncHttpClient
 			super.onPreExecute();
 			if (this.response != null)
 			{
+				this.response.getConnectionInfo().connectionUrl = requestUri.toString();
 				this.response.getConnectionInfo().connectionTime = System.currentTimeMillis();
 				this.response.getConnectionInfo().requestMethod = requestMode;
 				this.response.onSend();
@@ -917,11 +918,6 @@ public class AsyncHttpClient
 
 			try
 			{
-				if (this.response != null)
-				{
-					this.response.getConnectionInfo().connectionUrl = requestUri.toString();
-				}
-
 				System.setProperty("http.keepAlive", "false");
 
 				if (requestMode == RequestMode.GET)
