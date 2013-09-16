@@ -3,7 +3,7 @@ package net.callumtaylor.asynchttp.response;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-public abstract class GsonResponseHandler<T extends Class> extends AsyncHttpResponseHandler
+public abstract class GsonResponseHandler<T> extends AsyncHttpResponseHandler
 {
 	private T outClass;
 	private StringBuffer stringBuffer;
@@ -46,13 +46,13 @@ public abstract class GsonResponseHandler<T extends Class> extends AsyncHttpResp
 		try
 		{
 			Gson parser = new GsonBuilder().create();
-			return (T)parser.fromJson(stringBuffer.toString(), outClass);
+			return parser.fromJson(stringBuffer.toString(), (Class<T>)outClass);
 		}
 		catch (Exception e)
 		{
 			try
 			{
-				return (T)outClass.newInstance();
+				return ((Class<T>)outClass).newInstance();
 			}
 			catch (Exception e2)
 			{
