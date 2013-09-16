@@ -2,7 +2,7 @@ package net.callumtaylor.asynchttp.response;
 
 import java.io.ByteArrayOutputStream;
 
-public abstract class BinaryResponseHandler extends AsyncHttpResponseHandler
+public abstract class ByteArrayResponseHandler extends AsyncHttpResponseHandler
 {
 	private ByteArrayOutputStream byteBuffer;
 
