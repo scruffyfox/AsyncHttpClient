@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
+import net.callumtaylor.asynchttp.obj.HttpsFactory;
 import net.callumtaylor.asynchttp.obj.HttpsFactory.EasySSLSocketFactory;
 import net.callumtaylor.asynchttp.obj.Packet;
 import net.callumtaylor.asynchttp.obj.RequestMode;
@@ -68,6 +69,10 @@ import android.text.TextUtils;
  * <li>{@link HttpEntity}</li>
  * <li>{@link NameValuePair}</li>
  * <li>{@link ConnectionInfo}</li>
+ * <li>{@link Packet}</li>
+ * <li>{@link RequestMode}</li>
+ * <li>{@link RequestUtil}</li>
+ * <li>{@link HttpsFactory}</li>
  * </ul>
  * <h1>Example GET</h1>
  *

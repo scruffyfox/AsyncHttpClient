@@ -6,7 +6,10 @@ import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
+import net.callumtaylor.asynchttp.obj.ConnectionInfo;
+import net.callumtaylor.asynchttp.obj.HttpsFactory;
 import net.callumtaylor.asynchttp.obj.HttpsFactory.EasySSLSocketFactory;
+import net.callumtaylor.asynchttp.obj.Packet;
 import net.callumtaylor.asynchttp.obj.RequestMode;
 import net.callumtaylor.asynchttp.obj.RequestUtil;
 import net.callumtaylor.asynchttp.obj.entity.ProgressEntityWrapper;
@@ -42,8 +45,167 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 
 import android.net.Uri;
+import android.os.NetworkOnMainThreadException;
 import android.text.TextUtils;
 
+/**
+ * @mainpage
+ *
+ * This class is a synchronous class which runs on any thread that the code was created
+ * on. This will throw a {@link NetworkOnMainThreadException} if ran on the UI thread.
+ *
+ * <b>Note:</b> Because of the way SyncHttpClient works, only one instance can be created
+ * at a time. If one client makes 2 requests, the first request is canceled for the new
+ * request. You can either wait for the first to finish before making the second, or you
+ * can create two seperate instances.
+ *
+ * <b>Depends on</b>
+ * <ul>
+ * <li>{@link Processor}</li>
+ * <li>{@link HttpEntity}</li>
+ * <li>{@link NameValuePair}</li>
+ * <li>{@link ConnectionInfo}</li>
+ * <li>{@link Packet}</li>
+ * <li>{@link RequestMode}</li>
+ * <li>{@link RequestUtil}</li>
+ * <li>{@link HttpsFactory}</li>
+ * </ul>
+ * <h1>Example GET</h1>
+ *
+ * SyncHttpClient is a paramitized class which means the type you infer to it, is the type
+ * that gets returned when calling the method. When supplying a {@link Processor}, that
+ * processor must also paramitized with the same type as the SyncHttpClient instance.
+ *
+ * <pre>
+ * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
+ * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
+ * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
+ *
+ * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
+ * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
+ *
+ * JsonElement response = client.get(&quot;api/v1/&quot;, params, headers, new JsonProcessor());
+ * </pre>
+ *
+ * <h1>Example DELETE</h1>
+ *
+ * <pre>
+ * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
+ * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
+ * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
+ *
+ * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
+ * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
+ *
+ * JsonElement response = client.delete(&quot;api/v1/&quot;, params, headers, new JsonProcessor());
+ * </pre>
+ *
+ * <h1>Example POST - Single Entity</h1>
+ *
+ * <pre>
+ * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
+ * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
+ * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
+ *
+ * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
+ * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
+ *
+ * JsonEntity data = new JsonEntity(&quot;{\&quot;key\&quot;:\&quot;value\&quot;}&quot;);
+ * GzippedEntity entity = new GzippedEntity(data);
+ *
+ * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonProcessor());
+ * </pre>
+ *
+ * <h1>Example POST - Multiple Entity + file</h1>
+ *
+ * <pre>
+ * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
+ * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
+ * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
+ *
+ * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
+ * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
+ *
+ * MultiPartEntity entity = new MultiPartEntity();
+ * FileEntity data1 = new FileEntity(new File(&quot;/IMG_6614.JPG&quot;), &quot;image/jpeg&quot;);
+ * JsonEntity data2 = new JsonEntity(&quot;{\&quot;key\&quot;:\&quot;value\&quot;}&quot;);
+ * entity.addFilePart(&quot;image1.jpg&quot;, data1);
+ * entity.addPart(&quot;content1&quot;, data2);
+ *
+ * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonProcessor());
+ * </pre>
+ *
+ * <h1>Example PUT</h1>
+ *
+ * <pre>
+ * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
+ * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
+ * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
+ *
+ * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
+ * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
+ *
+ * JsonEntity data = new JsonEntity(&quot;{\&quot;key\&quot;:\&quot;value\&quot;}&quot;);
+ * GzippedEntity entity = new GzippedEntity(data);
+ *
+ * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonProcessor());
+ * </pre>
+ *
+ * <h1>Example custom processor</h1>
+ *
+ * <pre>
+ * SyncHttpClient<String> client = new SyncHttpClient<String>(&quot;http://example.com&quot;);
+ * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
+ * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
+ *
+ * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
+ * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
+ *
+ * String encodedResponse = client.get(&quot;api/v1/&quot;, params, headers, new Processor()
+ * {
+ * 	private StringBuffer stringBuffer;
+ *
+ * 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+ * 	{
+ *  	if (stringBuffer == null)
+ *  	{
+ * 			int total = (int)(totalLength > Integer.MAX_VALUE ? Integer.MAX_VALUE : totalLength);
+ * 			stringBuffer = new StringBuffer(Math.max(8192, total));
+ * 		}
+ *
+ * 		if (chunk != null)
+ *		{
+ * 			try
+ * 			{
+ *				// Shift all the bytes right
+ * 				byte tmp = chunk[chunk.length - 1];
+ *				for (int index = chunk.length - 2; index >= 0; index--)
+ *				{
+ *					chunk[index + 1] = chunk[index];
+ *				}
+ *
+ *				chunk[0] = tmp;
+ * 				stringBuffer.append(new String(chunk, 0, chunkLength, "UTF-8").);
+ * 			}
+ * 			catch (Exception e)
+ * 			{
+ * 				e.printStackTrace();
+ * 			}
+ *  	}
+ * 	}
+ *
+ * 	@Override public String getContent()
+ * 	{
+ *  	return stringBuffer.toString();
+ * 	}
+ * });
+ * </pre>
+ *
+ * Because of the nature of REST, GET and DELETE requests behave in the same
+ * way, POST and PUT requests also behave in the same way.
+ *
+ * @author Callum Taylor &lt;callumtaylor.net&gt; &#064;scruffyfox
+ */
 public class SyncHttpClient<E>
 {
 	private Uri requestUri;
