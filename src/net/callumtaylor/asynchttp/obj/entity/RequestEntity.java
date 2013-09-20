@@ -5,13 +5,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URLEncoder;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicHeader;
-
-import android.net.Uri;
 
 /**
  * Creates a request parameter entity for posting KV pairs to a server.
@@ -37,7 +36,7 @@ public class RequestEntity implements HttpEntity
 				out.write('&');
 			}
 
-			out.write((Uri.encode(key) + "=" + Uri.encode(value)).getBytes());
+			out.write((URLEncoder.encode(key, "UTF-8") + "=" + URLEncoder.encode(value, "UTF-8")).getBytes());
 		}
 		catch (Exception e){}
 	}

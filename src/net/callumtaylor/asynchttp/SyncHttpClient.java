@@ -43,10 +43,7 @@ import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
-
-import android.net.Uri;
-import android.os.NetworkOnMainThreadException;
-import android.text.TextUtils;
+import org.apache.http.util.TextUtils;
 
 /**
  * @mainpage
@@ -208,7 +205,7 @@ import android.text.TextUtils;
  */
 public class SyncHttpClient<E>
 {
-	private Uri requestUri;
+	private String requestUri;
 	private long requestTimeout = 0L;
 	private boolean allowAllSsl = false;
 	private ClientExecutorTask<E> executor;
@@ -223,33 +220,14 @@ public class SyncHttpClient<E>
 	}
 
 	/**
-	 * Creates a new client using a base Uri without a timeout
-	 * @param baseUrl The base connection uri
-	 */
-	public SyncHttpClient(Uri baseUri)
-	{
-		this(baseUri, 0);
-	}
-
-	/**
 	 * Creates a new client using a base Url with a timeout in MS
 	 * @param baseUrl The base connection url
 	 * @param timeout The timeout in MS
 	 */
 	public SyncHttpClient(String baseUrl, long timeout)
 	{
-		this(Uri.parse(baseUrl), timeout);
-	}
-
-	/**
-	 * Creates a new client using a base Uri with a timeout in MS
-	 * @param baseUrl The base connection uri
-	 * @param timeout The timeout in MS
-	 */
-	public SyncHttpClient(Uri baseUri, long timeout)
-	{
-		requestUri = baseUri;
-		requestTimeout = timeout;
+		this.requestUri = baseUrl;
+		this.requestTimeout = timeout;
 	}
 
 	/**
@@ -334,7 +312,7 @@ public class SyncHttpClient<E>
 	{
 		if (!TextUtils.isEmpty(path))
 		{
-			requestUri = Uri.withAppendedPath(requestUri, path);
+			requestUri += requestUri.endsWith("/") ? path : ("/" + path);
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
@@ -412,7 +390,7 @@ public class SyncHttpClient<E>
 	{
 		if (!TextUtils.isEmpty(path))
 		{
-			requestUri = Uri.withAppendedPath(requestUri, path);
+			requestUri += requestUri.endsWith("/") ? path : ("/" + path);
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
@@ -571,7 +549,7 @@ public class SyncHttpClient<E>
 	{
 		if (!TextUtils.isEmpty(path))
 		{
-			requestUri = Uri.withAppendedPath(requestUri, path);
+			requestUri += requestUri.endsWith("/") ? path : ("/" + path);
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
@@ -729,14 +707,14 @@ public class SyncHttpClient<E>
 	{
 		if (!TextUtils.isEmpty(path))
 		{
-			requestUri = Uri.withAppendedPath(requestUri, path);
+			requestUri += requestUri.endsWith("/") ? path : ("/" + path);
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
 		return executeTask(RequestMode.PUT, requestUri, headers, postData, response);
 	}
 
-	private E executeTask(RequestMode mode, Uri uri, List<Header> headers, HttpEntity sendData, Processor<?> requestProcessor)
+	private E executeTask(RequestMode mode, String uri, List<Header> headers, HttpEntity sendData, Processor<?> requestProcessor)
 	{
 		executor = new ClientExecutorTask<E>(mode, uri, headers, sendData, requestProcessor);
 		executor.onPreExecute();
@@ -760,13 +738,13 @@ public class SyncHttpClient<E>
 		private static final int BUFFER_SIZE = 1 * 1024 * 8;
 
 		private final Processor<?> response;
-		private final Uri requestUri;
+		private final String requestUri;
 		private final List<Header> requestHeaders;
 		private final HttpEntity postData;
 		private final RequestMode requestMode;
 		private volatile boolean cancelled = false;
 
-		public ClientExecutorTask(RequestMode mode, Uri request, List<Header> headers, HttpEntity postData, Processor<?> response)
+		public ClientExecutorTask(RequestMode mode, String request, List<Header> headers, HttpEntity postData, Processor<?> response)
 		{
 			this.response = response;
 			this.requestUri = request;
@@ -827,26 +805,26 @@ public class SyncHttpClient<E>
 			{
 				if (this.response != null)
 				{
-					this.response.getConnectionInfo().connectionUrl = requestUri.toString();
+					this.response.getConnectionInfo().connectionUrl = requestUri;
 				}
 
 				System.setProperty("http.keepAlive", "false");
 
 				if (requestMode == RequestMode.GET)
 				{
-					request = new HttpGet(requestUri.toString());
+					request = new HttpGet(requestUri);
 				}
 				else if (requestMode == RequestMode.POST)
 				{
-					request = new HttpPost(requestUri.toString());
+					request = new HttpPost(requestUri);
 				}
 				else if (requestMode == RequestMode.PUT)
 				{
-					request = new HttpPut(requestUri.toString());
+					request = new HttpPut(requestUri);
 				}
 				else if (requestMode == RequestMode.DELETE)
 				{
-					request = new HttpDelete(requestUri.toString());
+					request = new HttpDelete(requestUri);
 				}
 
 				HttpParams p = httpClient.getParams();
