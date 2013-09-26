@@ -3,8 +3,6 @@ package net.callumtaylor.asynchttp.obj;
 import java.util.List;
 import java.util.Map;
 
-import net.callumtaylor.asynchttp.AsyncHttpClient.RequestMode;
-
 public class ConnectionInfo
 {
 	public String connectionUrl = "";

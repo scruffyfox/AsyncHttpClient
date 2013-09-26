@@ -1,14 +1,14 @@
-package net.callumtaylor.asynchttp.response;
+package net.callumtaylor.asynchttp.processor;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-public abstract class GsonResponseHandler<T> extends AsyncHttpResponseHandler
+public class GsonProcessor<T> extends Processor<T>
 {
 	private T outClass;
 	private StringBuffer stringBuffer;
 
-	public GsonResponseHandler(T outClass)
+	public GsonProcessor(T outClass)
 	{
 		this.outClass = outClass;
 	}
