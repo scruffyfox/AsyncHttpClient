@@ -4,8 +4,6 @@ This is the new and improved version of AsyncHttpClient taken from X-Library. It
 
 In this version it allows a more flexible usage of posting files, http entities and GZIP handling.
 
-Read the full documentation [http://scruffyfox.github.com/AsyncHttpClient](http://scruffyfox.github.com/AsyncHttpClient)
-
 #Downloading large files
 
 In order to download large files, you will need to subclass `AsyncHttpResponseHandler` and override the `onPublishedDownloadProgress()` method to write directly to cache instead of appending to a `ByteArrayOutputStream` which is what the standard `BinaryResponseHandler` does. This is to stop OOM due to a over-sized output stream.
@@ -162,7 +160,7 @@ way, POST and PUT requests also behave in the same way.
 
 **Note** Because of the way SyncHttpClient works, only one instance can be created at a time. If one client makes 2 requests, the first request is canceled for the new request. You can either wait for the first to finish before making the second, or can create two seperate instances.
 
-SyncHttpClient is a paramitized class which means the type you infer to it, is the type that gets returned when calling the method. When supplying a {@link Processor}, that processor must also paramitized with the same type as the SyncHttpClient instance.
+SyncHttpClient is a paramitized class which means the type you infer to it, is the type that gets returned when calling the method. When supplying a [Processor](https://github.com/scruffyfox/AsyncHttpClient/blob/v1.2/src/net/callumtaylor/asynchttp/processor/Processor.java), that processor must also paramitized with the same type as the SyncHttpClient instance.
 
 ##Example GET
 
@@ -273,29 +271,29 @@ String encodedResponse = client.get("api/v1/", params, new Processor()
 		}
 
 		if (chunk != null)
-	{
+		{
 			try
 			{
-			// Shift all the bytes right
+				// Shift all the bytes right
 				byte tmp = chunk[chunk.length - 1];
-			for (int index = chunk.length - 2; index >= 0; index--)
-			{
-				chunk[index + 1] = chunk[index];
-			}
+				for (int index = chunk.length - 2; index >= 0; index--)
+				{
+					chunk[index + 1] = chunk[index];
+				}
 
-			chunk[0] = tmp;
+				chunk[0] = tmp;
 				stringBuffer.append(new String(chunk, 0, chunkLength, "UTF-8").);
 			}
 			catch (Exception e)
 			{
 				e.printStackTrace();
 			}
- 	}
+ 		}
 	}
 
 	@Override public String getContent()
 	{
- 	return stringBuffer.toString();
+ 		return stringBuffer.toString();
 	}
 });
 ```
