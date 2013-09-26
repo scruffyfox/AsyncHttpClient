@@ -755,6 +755,20 @@ public class SyncHttpClient<E>
 		this.allowAllSsl = allow;
 	}
 
+	/**
+	 * Gets the connection info <b>after</b> a connection request has been made
+	 * @return The connection info, or null
+	 */
+	public ConnectionInfo getConnectionInfo()
+	{
+		if (executor != null && executor.response != null)
+		{
+			return executor.response.getConnectionInfo();
+		}
+
+		return null;
+	}
+
 	private class ClientExecutorTask<F>
 	{
 		private static final int BUFFER_SIZE = 1 * 1024 * 8;
