@@ -702,7 +702,7 @@ public class AsyncHttpClient
 		}
 	}
 
-	private class ClientExecutorTask extends AsyncTask<Void, Packet, Void>
+	public class ClientExecutorTask extends AsyncTask<Void, Packet, Void>
 	{
 		private static final int BUFFER_SIZE = 1 * 1024 * 8;
 
@@ -863,35 +863,10 @@ public class AsyncHttpClient
 					{
 						if (contentLength != 0)
 						{
-							byte[] buffer = new byte[BUFFER_SIZE];
-
-							int len = 0;
-							int readCount = 0;
-							while ((len = i.read(buffer)) > -1 && !isCancelled())
+							if (this.response != null)
 							{
-								if (this.response != null)
-								{
-									this.response.onPublishedDownloadProgress(buffer, len, contentLength);
-									this.response.onPublishedDownloadProgress(buffer, len, readCount, contentLength);
-
-									publishProgress(new Packet(readCount, contentLength, true));
-								}
-
-								readCount += len;
+								this.response.onBeginPublishedDownloadProgress(i, this, contentLength);
 							}
-
-							if (this.response != null && !isCancelled())
-							{
-								this.response.getConnectionInfo().responseLength = readCount;
-
-								// we fake the content length, because it can be -1
-								this.response.onPublishedDownloadProgress(null, readCount, readCount);
-								this.response.onPublishedDownloadProgress(null, readCount, readCount, readCount);
-
-								publishProgress(new Packet(readCount, contentLength, true));
-							}
-
-							i.close();
 						}
 					}
 					catch (SocketTimeoutException timeout)
@@ -958,6 +933,11 @@ public class AsyncHttpClient
 				this.response.onFinish();
 				this.response.onFinish(this.response.getConnectionInfo().responseCode >= 400 || this.response.getConnectionInfo().responseCode == 0);
 			}
+		}
+
+		public void postPublishProgress(Packet... values)
+		{
+			publishProgress(values);
 		}
 	}
 
