@@ -1,6 +1,5 @@
 package net.callumtaylor.asynchttp.obj;
 
-import java.util.List;
 import java.util.Map;
 
 public class ConnectionInfo
@@ -14,7 +13,7 @@ public class ConnectionInfo
 	public int responseCode = 0;
 	public long responseTime = 0L;
 
-	public Map<String, List<String>> responseHeaders;
+	public Map<String, String> responseHeaders;
 
 	@Override public String toString()
 	{

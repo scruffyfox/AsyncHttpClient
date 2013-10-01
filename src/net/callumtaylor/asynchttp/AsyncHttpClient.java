@@ -3,6 +3,7 @@ package net.callumtaylor.asynchttp;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -828,6 +829,15 @@ public class AsyncHttpClient
 				// Get the response
 				HttpResponse response = httpClient.execute(request, httpContext);
 				int responseCode = response.getStatusLine().getStatusCode();
+
+				if (response.getAllHeaders() != null && this.response != null)
+				{
+					this.response.getConnectionInfo().responseHeaders = new LinkedHashMap<String, String>();
+					for (Header header : response.getAllHeaders())
+					{
+						this.response.getConnectionInfo().responseHeaders.put(header.getName(), header.getValue());
+					}
+				}
 
 				if (response.getEntity() != null)
 				{
