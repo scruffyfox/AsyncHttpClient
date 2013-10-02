@@ -1,6 +1,11 @@
 package net.callumtaylor.asynchttp.response;
 
+import java.io.InputStream;
+import java.net.SocketTimeoutException;
+
+import net.callumtaylor.asynchttp.AsyncHttpClient.ClientExecutorTask;
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
+import net.callumtaylor.asynchttp.obj.Packet;
 
 /**
  * This is the base class for response handlers in AsyncHttpClient. The method
@@ -33,6 +38,54 @@ public abstract class AsyncHttpResponseHandler
 	 * Called when the connection is first made
 	 */
 	public void onSend(){}
+
+	/**
+	 * Called when processing the response from a stream. Use this to override
+	 * the processing of the InputStream to handle the response differently.
+	 * Default is to read the response as a byte-array which gets passed, chunk
+	 * by chunk, to {@link onPublishedDownloadProgress}
+	 *
+	 * @param stream
+	 *            The response InputStream
+	 * @param client
+	 *            The client task. In order to call
+	 *            {@link onPublishedDownloadProgressUI}, you must call
+	 *            <code>client.postPublishProgress(new Packet(int readCount, int totalLength, boolean isDownload))</code>
+	 *            This is required when displaying a progress indicator.
+	 * @param totalLength
+	 *            The total length of the stream
+	 * @throws SocketTimeoutException
+	 * @throws Exception
+	 */
+	public void onBeginPublishedDownloadProgress(InputStream stream, ClientExecutorTask client, long totalLength) throws SocketTimeoutException, Exception
+	{
+		byte[] buffer = new byte[8196];
+
+		int len = 0;
+		int readCount = 0;
+		while ((len = stream.read(buffer)) > -1 && !client.isCancelled())
+		{
+			onPublishedDownloadProgress(buffer, len, totalLength);
+			onPublishedDownloadProgress(buffer, len, readCount, totalLength);
+
+			client.postPublishProgress(new Packet(readCount, totalLength, true));
+
+			readCount += len;
+		}
+
+		if (!client.isCancelled())
+		{
+			getConnectionInfo().responseLength = readCount;
+
+			// we fake the content length, because it can be -1
+			onPublishedDownloadProgress(null, readCount, readCount);
+			onPublishedDownloadProgress(null, readCount, readCount, readCount);
+
+			client.postPublishProgress(new Packet(readCount, totalLength, true));
+		}
+
+		stream.close();
+	}
 
 	/**
 	 * Called when a chunk has been downloaded from the request. This will be

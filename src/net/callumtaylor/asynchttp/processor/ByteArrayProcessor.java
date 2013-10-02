@@ -1,8 +1,8 @@
-package net.callumtaylor.asynchttp.response;
+package net.callumtaylor.asynchttp.processor;
 
 import java.io.ByteArrayOutputStream;
 
-public abstract class BinaryResponseHandler extends AsyncHttpResponseHandler
+public class ByteArrayProcessor extends Processor<byte[]>
 {
 	private ByteArrayOutputStream byteBuffer;
 
@@ -22,7 +22,6 @@ public abstract class BinaryResponseHandler extends AsyncHttpResponseHandler
 
 	/**
 	 * Processes the response from the stream.
-	 * This is <b>not</b> ran on the UI thread
 	 *
 	 * @return The data represented as a byte array
 	 */
