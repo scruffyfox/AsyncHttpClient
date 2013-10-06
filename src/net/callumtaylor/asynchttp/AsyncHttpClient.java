@@ -788,14 +788,14 @@ public class AsyncHttpClient
 
 				if (postData != null)
 				{
-					request.setHeader(postData.getContentType().getName(), postData.getContentType().getValue());
+					request.addHeader(postData.getContentType().getName(), postData.getContentType().getValue());
 				}
 
 				if (requestHeaders != null)
 				{
 					for (Header header : requestHeaders)
 					{
-						request.setHeader(header.getName(), header.getValue());
+						request.addHeader(header.getName(), header.getValue());
 					}
 				}
 
@@ -839,15 +839,16 @@ public class AsyncHttpClient
 				{
 					String encoding = response.getEntity().getContentEncoding() == null ? "" : response.getEntity().getContentEncoding().getValue();
 					long contentLength = response.getEntity().getContentLength();
-					InputStream i = response.getEntity().getContent();
+					InputStream responseStream;
+					InputStream stream = response.getEntity().getContent();
 
 					if ("gzip".equals(encoding))
 					{
-						i = new GZIPInputStream(new BufferedInputStream(i, BUFFER_SIZE));
+						responseStream = new GZIPInputStream(new BufferedInputStream(stream, BUFFER_SIZE));
 					}
 					else
 					{
-						i = new BufferedInputStream(i, BUFFER_SIZE);
+						responseStream = new BufferedInputStream(stream, BUFFER_SIZE);
 					}
 
 					if (this.response != null && !isCancelled())
@@ -857,12 +858,9 @@ public class AsyncHttpClient
 
 					try
 					{
-						if (contentLength != 0)
+						if (this.response != null && contentLength != 0)
 						{
-							if (this.response != null)
-							{
-								this.response.onBeginPublishedDownloadProgress(i, this, contentLength);
-							}
+							this.response.onBeginPublishedDownloadProgress(responseStream, this, contentLength);
 						}
 					}
 					catch (SocketTimeoutException timeout)
