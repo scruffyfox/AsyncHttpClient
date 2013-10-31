@@ -875,7 +875,6 @@ public class AsyncHttpClient
 
 				if (this.response != null && !isCancelled())
 				{
-					this.response.getConnectionInfo().responseTime = System.currentTimeMillis();
 					this.response.getConnectionInfo().responseCode = responseCode;
 				}
 			}
@@ -886,6 +885,8 @@ public class AsyncHttpClient
 
 			if (this.response != null && !isCancelled())
 			{
+				this.response.getConnectionInfo().responseTime = System.currentTimeMillis();
+
 				if (this.response.getConnectionInfo().responseCode < 400 && this.response.getConnectionInfo().responseCode > 100)
 				{
 					this.response.onSuccess();
