@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
+import net.callumtaylor.asynchttp.obj.HttpDeleteWithBody;
 import net.callumtaylor.asynchttp.obj.HttpsFactory;
 import net.callumtaylor.asynchttp.obj.HttpsFactory.EasySSLSocketFactory;
 import net.callumtaylor.asynchttp.obj.Packet;
@@ -23,7 +24,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -319,7 +319,7 @@ public class AsyncHttpClient
 	 */
 	public void delete(AsyncHttpResponseHandler response)
 	{
-		delete("", null, null, response);
+		delete("", null, null, null, response);
 	}
 
 	/**
@@ -329,17 +329,18 @@ public class AsyncHttpClient
 	 */
 	public void delete(String path, AsyncHttpResponseHandler response)
 	{
-		delete(path, null, null, response);
+		delete(path, null, null, null, response);
 	}
 
 	/**
 	 * Performs a DELETE request on the baseUri
-	 * @param headers The request headers for the connection
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void delete(List<Header> headers, AsyncHttpResponseHandler response)
+	public void delete(List<NameValuePair> params, AsyncHttpResponseHandler response)
 	{
-		delete("", null, headers, response);
+		delete("", params, null, null, response);
 	}
 
 	/**
@@ -350,18 +351,50 @@ public class AsyncHttpClient
 	 */
 	public void delete(List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
 	{
-		delete("", params, headers, response);
+		delete("", params, null, headers, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public void delete(HttpEntity postData, AsyncHttpResponseHandler response)
+	{
+		delete("", null, postData, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void delete(HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
+	{
+		delete("", null, postData, headers, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public void delete(List<NameValuePair> params, HttpEntity postData, AsyncHttpResponseHandler response)
+	{
+		delete("", params, postData, null, response);
 	}
 
 	/**
 	 * Performs a DELETE request on the baseUri
 	 * @param path The path extended from the baseUri
-	 * @param headers The request headers for the connection
+	 * @param params The Query params to append to the baseUri
 	 * @param response The response handler for the request
 	 */
 	public void delete(String path, List<NameValuePair> params, AsyncHttpResponseHandler response)
 	{
-		delete(path, params, null, response);
+		delete(path, params, null, null, response);
 	}
 
 	/**
@@ -373,13 +406,61 @@ public class AsyncHttpClient
 	 */
 	public void delete(String path, List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
 	{
+		delete(path, params, null, headers, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public void delete(String path, HttpEntity postData, AsyncHttpResponseHandler response)
+	{
+		delete(path, null, postData, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void delete(String path, HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
+	{
+		delete(path, null, postData, headers, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public void delete(String path, List<NameValuePair> params, HttpEntity postData, AsyncHttpResponseHandler response)
+	{
+		delete(path, params, postData, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void delete(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
+	{
 		if (!TextUtils.isEmpty(path))
 		{
 			requestUri = Uri.withAppendedPath(requestUri, path);
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		executeTask(RequestMode.DELETE, requestUri, headers, null, response);
+		executeTask(RequestMode.DELETE, requestUri, headers, postData, response);
 	}
 
 	/**
@@ -778,7 +859,7 @@ public class AsyncHttpClient
 				}
 				else if (requestMode == RequestMode.DELETE)
 				{
-					request = new HttpDelete(requestUri.toString());
+					request = new HttpDeleteWithBody(requestUri.toString());
 				}
 
 				HttpParams p = httpClient.getParams();
@@ -799,7 +880,7 @@ public class AsyncHttpClient
 					}
 				}
 
-				if ((requestMode == RequestMode.POST || requestMode == RequestMode.PUT) && postData != null)
+				if ((requestMode == RequestMode.POST || requestMode == RequestMode.PUT || requestMode == RequestMode.DELETE) && postData != null)
 				{
 					final long contentLength = postData.getContentLength();
 					if (this.response != null && !isCancelled())
