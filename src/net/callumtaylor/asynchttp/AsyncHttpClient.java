@@ -1,11 +1,11 @@
 package net.callumtaylor.asynchttp;
 
-import java.io.BufferedInputStream;
-import java.io.InputStream;
-import java.net.SocketTimeoutException;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.zip.GZIPInputStream;
+import android.annotation.TargetApi;
+import android.net.Uri;
+import android.os.AsyncTask;
+import android.os.AsyncTask.Status;
+import android.os.Build;
+import android.text.TextUtils;
 
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
 import net.callumtaylor.asynchttp.obj.HttpDeleteWithBody;
@@ -29,6 +29,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.params.HttpClientParams;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.params.ConnManagerPNames;
 import org.apache.http.conn.params.ConnPerRouteBean;
@@ -44,12 +45,12 @@ import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 
-import android.annotation.TargetApi;
-import android.net.Uri;
-import android.os.AsyncTask;
-import android.os.AsyncTask.Status;
-import android.os.Build;
-import android.text.TextUtils;
+import java.io.BufferedInputStream;
+import java.io.InputStream;
+import java.net.SocketTimeoutException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 /**
  * @mainpage
@@ -193,6 +194,7 @@ public class AsyncHttpClient
 	private Uri requestUri;
 	private long requestTimeout = 0L;
 	private boolean allowAllSsl = false;
+	private boolean allowRedirect = true;
 
 	/**
 	 * Creates a new client using a base Url without a timeout
@@ -771,7 +773,7 @@ public class AsyncHttpClient
 			executorTask = null;
 		}
 
-		executorTask = new ClientExecutorTask(mode, uri, headers, sendData, response);
+		executorTask = new ClientExecutorTask(mode, uri, headers, sendData, response, allowRedirect);
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
 		{
@@ -792,14 +794,16 @@ public class AsyncHttpClient
 		private final List<Header> requestHeaders;
 		private final HttpEntity postData;
 		private final RequestMode requestMode;
+		private boolean allowRedirect = true;
 
-		public ClientExecutorTask(RequestMode mode, Uri request, List<Header> headers, HttpEntity postData, AsyncHttpResponseHandler response)
+		public ClientExecutorTask(RequestMode mode, Uri request, List<Header> headers, HttpEntity postData, AsyncHttpResponseHandler response, boolean allowRedirect)
 		{
 			this.response = response;
 			this.requestUri = request;
 			this.requestHeaders = headers;
 			this.postData = postData;
 			this.requestMode = mode;
+			this.allowRedirect = allowRedirect;
 		}
 
 		@Override protected void onPreExecute()
@@ -863,6 +867,7 @@ public class AsyncHttpClient
 				}
 
 				HttpParams p = httpClient.getParams();
+				HttpClientParams.setRedirecting(p, allowRedirect);
 				HttpConnectionParams.setConnectionTimeout(p, (int)requestTimeout);
 				HttpConnectionParams.setSoTimeout(p, (int)requestTimeout);
 				request.setHeader("Connection", "close");
@@ -1020,5 +1025,10 @@ public class AsyncHttpClient
 	public void setAllowAllSsl(boolean allow)
 	{
 		this.allowAllSsl = allow;
+	}
+
+	public void setAllowRedirect(boolean allow)
+	{
+		this.allowRedirect = allow;
 	}
 }
