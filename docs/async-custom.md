@@ -10,6 +10,7 @@ AsyncHttpClient client = new AyncHttpClient("http://example.com");
 client.get("api/v1/", new AsyncHttpResponseHandler()
 {
 	private StringBuffer stringBuffer;
+	private JsonElement content;
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
@@ -32,6 +33,19 @@ client.get("api/v1/", new AsyncHttpResponseHandler()
 		}
 	}
 
+	@Override public void generateContent()
+	{
+		try
+		{
+			this.content = new JsonParser().parse(stringBuffer.toString());
+			this.stringBuffer = null;
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+
 	/**
 	 * Processes the response from the stream.
 	 * This is <b>not</b> ran on the UI thread
@@ -40,18 +54,7 @@ client.get("api/v1/", new AsyncHttpResponseHandler()
 	 */
 	@Override public JsonElement getContent()
 	{
-		try
-		{
-			return new JsonParser().parse(stringBuffer.toString());
-		}
-		catch (Exception e)
-		{
-			return null;
-		}
-		finally
-		{
-			stringBuffer = null;
-		}
+		return content
 	}
 });
 ```

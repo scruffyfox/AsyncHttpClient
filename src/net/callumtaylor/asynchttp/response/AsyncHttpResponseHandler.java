@@ -1,11 +1,11 @@
 package net.callumtaylor.asynchttp.response;
 
-import java.io.InputStream;
-import java.net.SocketTimeoutException;
-
 import net.callumtaylor.asynchttp.AsyncHttpClient.ClientExecutorTask;
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
 import net.callumtaylor.asynchttp.obj.Packet;
+
+import java.io.InputStream;
+import java.net.SocketTimeoutException;
 
 /**
  * This is the base class for response handlers in AsyncHttpClient. The method
@@ -15,15 +15,15 @@ import net.callumtaylor.asynchttp.obj.Packet;
  * onSend -> onPublishedUploadProgress -> onPublishedDownloadProgress -> beforeCallback -> onSuccess/onFailure -> beforeFinish -> onFinish
  * </pre>
  *
- * {@link onPublishedDownloadProgress}, {@link onPublishedUploadProgress},
- * {@link beforeCallback}, {@link onSuccess}, and {@link onFailure} all run in
- * the bacgkround thread. All your processing should be handled in one of those
+ * {@link AsyncHttpResponseHandler#onPublishedDownloadProgress}, {@link AsyncHttpResponseHandler#onPublishedUploadProgress},
+ * {@link AsyncHttpResponseHandler#beforeCallback}, {@link AsyncHttpResponseHandler#onSuccess}, and {@link AsyncHttpResponseHandler#onFailure} all run in
+ * the background thread. All your processing should be handled in one of those
  * 4 methods and then either call to run on UI thread a new runnable, or handle
- * in {@link onFinish} which runs on the UI thread
+ * in {@link AsyncHttpResponseHandler#onFinish} which runs on the UI thread
  *
  * In order to get the content created from the response handler, you must
- * call {@link getContent} which can be accessed in {@link onSuccess} or
- * {@link onFailure}
+ * call {@link AsyncHttpResponseHandler#getContent} which can be accessed in {@link AsyncHttpResponseHandler#onSuccess} or
+ * {@link AsyncHttpResponseHandler#onFailure}
  */
 public abstract class AsyncHttpResponseHandler
 {
@@ -43,13 +43,13 @@ public abstract class AsyncHttpResponseHandler
 	 * Called when processing the response from a stream. Use this to override
 	 * the processing of the InputStream to handle the response differently.
 	 * Default is to read the response as a byte-array which gets passed, chunk
-	 * by chunk, to {@link onPublishedDownloadProgress}
+	 * by chunk, to {@link AsyncHttpResponseHandler#onPublishedDownloadProgress}
 	 *
 	 * @param stream
 	 *            The response InputStream
 	 * @param client
 	 *            The client task. In order to call
-	 *            {@link onPublishedDownloadProgressUI}, you must call
+	 *            {@link AsyncHttpResponseHandler#onPublishedDownloadProgressUI}, you must call
 	 *            <code>client.postPublishProgress(new Packet(int readCount, int totalLength, boolean isDownload))</code>
 	 *            This is required when displaying a progress indicator.
 	 * @param totalLength
@@ -172,7 +172,7 @@ public abstract class AsyncHttpResponseHandler
 	public void onPublishedUploadProgressUI(long totalProcessed, long totalLength){}
 
 	/**
-	 * Called just before {@link onSuccess}
+	 * Called just before {@link AsyncHttpResponseHandler#onSuccess}
 	 */
 	public void beforeCallback(){}
 
@@ -210,7 +210,7 @@ public abstract class AsyncHttpResponseHandler
 	public void onFailure(){}
 
 	/**
-	 * Called before {@link onFinish}
+	 * Called before {@link AsyncHttpResponseHandler#onFinish}
 	 */
 	public void beforeFinish(){}
 
