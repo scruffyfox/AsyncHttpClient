@@ -947,6 +947,7 @@ public class AsyncHttpClient
 						if (this.response != null && contentLength != 0)
 						{
 							this.response.onBeginPublishedDownloadProgress(responseStream, this, contentLength);
+							this.response.generateContent();
 						}
 					}
 					catch (SocketTimeoutException timeout)

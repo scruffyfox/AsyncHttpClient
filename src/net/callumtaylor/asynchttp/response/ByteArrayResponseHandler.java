@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 public abstract class ByteArrayResponseHandler extends AsyncHttpResponseHandler
 {
 	private ByteArrayOutputStream byteBuffer;
+	private byte[] bytes;
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
@@ -21,13 +22,19 @@ public abstract class ByteArrayResponseHandler extends AsyncHttpResponseHandler
 	}
 
 	/**
-	 * Processes the response from the stream.
-	 * This is <b>not</b> ran on the UI thread
-	 *
+	 * Generate the bitmap from the buffer and remove it to allow the GC to clean up properly
+	 */
+	@Override public void generateContent()
+	{
+		this.bytes = byteBuffer.toByteArray();
+		this.byteBuffer = null;
+	}
+
+	/**
 	 * @return The data represented as a byte array
 	 */
 	@Override public byte[] getContent()
 	{
-		return byteBuffer.toByteArray();
+		return bytes;
 	}
 }

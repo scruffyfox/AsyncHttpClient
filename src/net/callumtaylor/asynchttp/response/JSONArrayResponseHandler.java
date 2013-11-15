@@ -11,6 +11,7 @@ import org.json.JSONArray;
 public abstract class JSONArrayResponseHandler extends AsyncHttpResponseHandler
 {
 	private StringBuffer stringBuffer;
+	private JSONArray content;
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
@@ -34,20 +35,26 @@ public abstract class JSONArrayResponseHandler extends AsyncHttpResponseHandler
 	}
 
 	/**
-	 * Processes the response from the stream.
-	 * This is <b>not</b> ran on the UI thread
-	 *
-	 * @return The data represented as a gson JsonElement primitive type
+	 * Generate the JSONArray from the buffer and remove it to allow the GC to clean up properly
 	 */
-	@Override public JSONArray getContent()
+	@Override public void generateContent()
 	{
 		try
 		{
-			return new JSONArray(stringBuffer.toString());
+			this.content = new JSONArray(stringBuffer.toString());
+			this.stringBuffer = null;
 		}
 		catch (Exception e)
 		{
-			return null;
+			e.printStackTrace();;
 		}
+	}
+
+	/**
+	 * @return The data represented as a JSONArray primitive type
+	 */
+	@Override public JSONArray getContent()
+	{
+		return content;
 	}
 }

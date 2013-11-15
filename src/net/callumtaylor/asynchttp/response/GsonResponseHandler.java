@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder;
 public abstract class GsonResponseHandler<T> extends AsyncHttpResponseHandler
 {
 	private T outClass;
+	private T content;
 	private StringBuffer stringBuffer;
 
 	public GsonResponseHandler(T outClass)
@@ -35,29 +36,37 @@ public abstract class GsonResponseHandler<T> extends AsyncHttpResponseHandler
 	}
 
 	/**
-	 * Processes the response from the stream. This is <b>not</b> ran on the UI
-	 * thread
-	 *
-	 * @return The data represented as a gson JsonElement primitive type, or a
-	 *         new instance of T if failed to parse Json
+	 * Generate the class from the buffer and remove it to allow the GC to clean up properly
 	 */
-	@SuppressWarnings("unchecked") @Override public T getContent()
+	@SuppressWarnings("unchecked") @Override public void generateContent()
 	{
 		try
 		{
 			Gson parser = new GsonBuilder().create();
-			return parser.fromJson(stringBuffer.toString(), (Class<T>)outClass);
+			this.content = parser.fromJson(stringBuffer.toString(), (Class<T>)outClass);
 		}
 		catch (Exception e)
 		{
 			try
 			{
-				return ((Class<T>)outClass).newInstance();
+				this.content = ((Class<T>)outClass).newInstance();
 			}
 			catch (Exception e2)
 			{
-				return null;
+				e2.printStackTrace();
 			}
 		}
+
+		this.stringBuffer = null;
+	}
+
+
+	/**
+	 * @return The data represented as a gson JsonElement primitive type, or a
+	 *         new instance of T if failed to parse Json
+	 */
+	@Override public T getContent()
+	{
+		return content;
 	}
 }

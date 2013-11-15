@@ -177,6 +177,14 @@ public abstract class AsyncHttpResponseHandler
 	public void beforeCallback(){}
 
 	/**
+	 * Override this method to efficiently generate your content from any buffers you have have
+	 * used.
+	 *
+	 * This is called directly after {@link AsyncHttpResponseHandler#onBeginPublishedDownloadProgress} has finished
+	 */
+	public abstract void generateContent();
+
+	/**
 	 * Gets the content generated from the
 	 * response.
 	 *
