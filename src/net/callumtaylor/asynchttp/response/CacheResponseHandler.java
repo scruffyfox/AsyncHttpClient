@@ -52,6 +52,11 @@ public abstract class CacheResponseHandler extends AsyncHttpResponseHandler
 		}
 	}
 
+	@Override public void generateContent()
+	{
+		// nothing to do here
+	}
+
 	/**
 	 * Processes the response from the stream.
 	 * This is <b>not</b> ran on the UI thread

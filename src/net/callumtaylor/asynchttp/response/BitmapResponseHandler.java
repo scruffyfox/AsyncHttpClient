@@ -1,13 +1,14 @@
 package net.callumtaylor.asynchttp.response;
 
-import java.io.ByteArrayOutputStream;
-
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+
+import java.io.ByteArrayOutputStream;
 
 public abstract class BitmapResponseHandler extends AsyncHttpResponseHandler
 {
 	private ByteArrayOutputStream byteBuffer;
+	private Bitmap bitmap;
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
@@ -24,13 +25,19 @@ public abstract class BitmapResponseHandler extends AsyncHttpResponseHandler
 	}
 
 	/**
-	 * Processes the response from the stream.
-	 * This is <b>not</b> ran on the UI thread
-	 *
+	 * Generate the bitmap from the buffer and remove it to allow the GC to clean up properly
+	 */
+	@Override public void generateContent()
+	{
+		this.bitmap = BitmapFactory.decodeByteArray(byteBuffer.toByteArray(), 0, byteBuffer.size(), null);
+		this.byteBuffer = null;
+	}
+
+	/**
 	 * @return The data represented as a bitmap
 	 */
 	@Override public Bitmap getContent()
 	{
-		return BitmapFactory.decodeByteArray(byteBuffer.toByteArray(), 0, byteBuffer.size(), null);
+		return bitmap;
 	}
 }
