@@ -5,11 +5,11 @@ import com.google.gson.GsonBuilder;
 
 public abstract class GsonResponseHandler<T> extends AsyncHttpResponseHandler
 {
-	private T outClass;
+	private Class<T> outClass;
 	private T content;
 	private StringBuffer stringBuffer;
 
-	public GsonResponseHandler(T outClass)
+	public GsonResponseHandler(Class<T> outClass)
 	{
 		this.outClass = outClass;
 	}
