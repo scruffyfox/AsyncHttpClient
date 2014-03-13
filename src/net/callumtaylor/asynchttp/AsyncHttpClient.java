@@ -945,7 +945,7 @@ public class AsyncHttpClient
 
 					try
 					{
-						if (this.response != null && contentLength != 0)
+						if (this.response != null && contentLength != 0 && !isCancelled())
 						{
 							this.response.onBeginPublishedDownloadProgress(responseStream, this, contentLength);
 							this.response.generateContent();
@@ -958,6 +958,10 @@ public class AsyncHttpClient
 					catch (Exception e)
 					{
 						e.printStackTrace();
+					}
+					finally
+					{
+						responseStream.close();
 					}
 				}
 
