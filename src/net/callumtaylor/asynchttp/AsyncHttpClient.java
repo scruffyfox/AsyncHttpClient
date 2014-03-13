@@ -814,6 +814,7 @@ public class AsyncHttpClient
 				this.response.getConnectionInfo().connectionUrl = requestUri.toString();
 				this.response.getConnectionInfo().connectionTime = System.currentTimeMillis();
 				this.response.getConnectionInfo().requestMethod = requestMode;
+				this.response.getConnectionInfo().requestHeaders = requestHeaders;
 				this.response.onSend();
 			}
 		}
