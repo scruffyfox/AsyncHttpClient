@@ -26,6 +26,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -207,7 +208,7 @@ public class AsyncHttpClient
 
 	/**
 	 * Creates a new client using a base Uri without a timeout
-	 * @param baseUrl The base connection uri
+	 * @param baseUri The base connection uri
 	 */
 	public AsyncHttpClient(Uri baseUri)
 	{
@@ -226,7 +227,7 @@ public class AsyncHttpClient
 
 	/**
 	 * Creates a new client using a base Uri with a timeout in MS
-	 * @param baseUrl The base connection uri
+	 * @param baseUri The base connection uri
 	 * @param timeout The timeout in MS
 	 */
 	public AsyncHttpClient(Uri baseUri, long timeout)
@@ -289,7 +290,6 @@ public class AsyncHttpClient
 	/**
 	 * Performs a GET request on the baseUri
 	 * @param path The path extended from the baseUri
-	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
 	public void get(String path, List<NameValuePair> params, AsyncHttpResponseHandler response)
@@ -316,6 +316,74 @@ public class AsyncHttpClient
 	}
 
 	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param response The response handler for the request
+	 */
+	public void head(AsyncHttpResponseHandler response)
+	{
+		head("", null, null, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param response The response handler for the request
+	 */
+	public void head(String path, AsyncHttpResponseHandler response)
+	{
+		head(path, null, null, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void head(List<Header> headers, AsyncHttpResponseHandler response)
+	{
+		head("", null, headers, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void head(List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
+	{
+		head("", params, headers, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param response The response handler for the request
+	 */
+	public void head(String path, List<NameValuePair> params, AsyncHttpResponseHandler response)
+	{
+		head(path, params, null, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void head(String path, List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
+	{
+		if (!TextUtils.isEmpty(path))
+		{
+			requestUri = Uri.withAppendedPath(requestUri, path);
+		}
+
+		requestUri = RequestUtil.appendParams(requestUri, params);
+		executeTask(RequestMode.HEAD, requestUri, headers, null, response);
+	}
+
+	/**
 	 * Performs a DELETE request on the baseUri
 	 * @param response The response handler for the request
 	 */
@@ -336,7 +404,6 @@ public class AsyncHttpClient
 
 	/**
 	 * Performs a DELETE request on the baseUri
-	 * @param path The path extended from the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param response The response handler for the request
 	 */
@@ -486,7 +553,6 @@ public class AsyncHttpClient
 
 	/**
 	 * Performs a POST request on the baseUri
-	 * @param path The path extended from the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param response The response handler for the request
 	 */
@@ -865,6 +931,10 @@ public class AsyncHttpClient
 				else if (requestMode == RequestMode.DELETE)
 				{
 					request = new HttpDeleteWithBody(requestUri.toString());
+				}
+				else if (requestMode == RequestMode.HEAD)
+				{
+					request = new HttpHead(requestUri.toString());
 				}
 
 				HttpParams p = httpClient.getParams();

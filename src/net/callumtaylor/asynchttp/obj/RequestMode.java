@@ -18,7 +18,12 @@ public enum RequestMode
 	 * Deletes data from the server (equivilant to GET with relevant
 	 * headers)
 	 */
-	DELETE("DELETE");
+	DELETE("DELETE"),
+
+	/**
+	 * Equivalent GET call but without any response body
+	 */
+	HEAD("HEAD");
 
 	private String canonicalStr = "";
 	private RequestMode(String canonicalStr)
