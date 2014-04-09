@@ -25,6 +25,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -340,6 +341,84 @@ public class SyncHttpClient<E>
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
 		return executeTask(RequestMode.GET, requestUri, headers, null, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param response The response handler for the request
+	 */
+	public E head(Processor<?> response)
+	{
+		return head("", null, null, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param path The path extended from the baseUri
+	 */
+	public E head(String path)
+	{
+		return head(path, null, null, new ByteArrayProcessor());
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param response The response handler for the request
+	 */
+	public E head(String path, Processor<?> response)
+	{
+		return head(path, null, null, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E head(List<Header> headers, Processor<?> response)
+	{
+		return head("", null, headers, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E head(List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	{
+		return head("", params, headers, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The request params for the connection
+	 * @param response The response handler for the request
+	 */
+	public E head(String path, List<NameValuePair> params, Processor<?> response)
+	{
+		return head(path, params, null, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E head(String path, List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	{
+		if (!TextUtils.isEmpty(path))
+		{
+			requestUri = Uri.withAppendedPath(requestUri, path);
+		}
+
+		requestUri = RequestUtil.appendParams(requestUri, params);
+		return executeTask(RequestMode.HEAD, requestUri, headers, null, response);
 	}
 
 	/**
@@ -1019,6 +1098,10 @@ public class SyncHttpClient<E>
 				else if (requestMode == RequestMode.DELETE)
 				{
 					request = new HttpDelete(requestUri.toString());
+				}
+				else if (requestMode == RequestMode.HEAD)
+				{
+					request = new HttpHead(requestUri.toString());
 				}
 				else if (requestMode == RequestMode.PATCH)
 				{
