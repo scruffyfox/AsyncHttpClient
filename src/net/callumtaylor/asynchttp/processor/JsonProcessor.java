@@ -1,9 +1,11 @@
-package net.callumtaylor.asynchttp.response;
+package net.callumtaylor.asynchttp.processor;
 
-public abstract class StringResponseHandler extends AsyncHttpResponseHandler
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+
+public class JsonProcessor extends Processor<JsonElement>
 {
 	private StringBuffer stringBuffer;
-	private String content;
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
@@ -27,19 +29,13 @@ public abstract class StringResponseHandler extends AsyncHttpResponseHandler
 	}
 
 	/**
-	 * Generate the String from the buffer and remove it to allow the GC to clean up properly
+	 * Processes the response from the stream.
+	 * This is <b>not</b> ran on the UI thread
+	 *
+	 * @return The data represented as a gson JsonElement primitive type
 	 */
-	@Override public void generateContent()
+	@Override public JsonElement getContent()
 	{
-		this.content = stringBuffer.toString();
-		this.stringBuffer = null;
-	}
-
-	/**
-	 * @return The data represented as a String
-	 */
-	@Override public String getContent()
-	{
-		return content;
+		return new JsonParser().parse(stringBuffer.toString());
 	}
 }

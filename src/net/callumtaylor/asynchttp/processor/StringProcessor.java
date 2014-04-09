@@ -1,9 +1,8 @@
-package net.callumtaylor.asynchttp.response;
+package net.callumtaylor.asynchttp.processor;
 
-public abstract class StringResponseHandler extends AsyncHttpResponseHandler
+public class StringProcessor extends Processor<String>
 {
 	private StringBuffer stringBuffer;
-	private String content;
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
@@ -27,19 +26,13 @@ public abstract class StringResponseHandler extends AsyncHttpResponseHandler
 	}
 
 	/**
-	 * Generate the String from the buffer and remove it to allow the GC to clean up properly
-	 */
-	@Override public void generateContent()
-	{
-		this.content = stringBuffer.toString();
-		this.stringBuffer = null;
-	}
-
-	/**
+	 * Processes the response from the stream.
+	 * This is <b>not</b> ran on the UI thread
+	 *
 	 * @return The data represented as a String
 	 */
 	@Override public String getContent()
 	{
-		return content;
+		return stringBuffer.toString();
 	}
 }
