@@ -26,6 +26,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpOptions;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -341,6 +342,84 @@ public class SyncHttpClient<E>
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
 		return executeTask(RequestMode.GET, requestUri, headers, null, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param response The response handler for the request
+	 */
+	public E options(Processor<?> response)
+	{
+		return options("", null, null, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param path The path extended from the baseUri
+	 */
+	public E options(String path)
+	{
+		return options(path, null, null, new ByteArrayProcessor());
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param response The response handler for the request
+	 */
+	public E options(String path, Processor<?> response)
+	{
+		return options(path, null, null, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E options(List<Header> headers, Processor<?> response)
+	{
+		return options("", null, headers, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E options(List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	{
+		return options("", params, headers, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The request params for the connection
+	 * @param response The response handler for the request
+	 */
+	public E options(String path, List<NameValuePair> params, Processor<?> response)
+	{
+		return options(path, params, null, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E options(String path, List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	{
+		if (!TextUtils.isEmpty(path))
+		{
+			requestUri = Uri.withAppendedPath(requestUri, path);
+		}
+
+		requestUri = RequestUtil.appendParams(requestUri, params);
+		return executeTask(RequestMode.OPTIONS, requestUri, headers, null, response);
 	}
 
 	/**
@@ -1172,6 +1251,10 @@ public class SyncHttpClient<E>
 				{
 					request = new HttpPatch(requestUri.toString());
 				}
+				else if (requestMode == RequestMode.OPTIONS)
+				{
+					request = new HttpOptions(requestUri.toString());
+				}
 
 				HttpParams p = httpClient.getParams();
 				HttpConnectionParams.setConnectionTimeout(p, (int)requestTimeout);
@@ -1191,7 +1274,7 @@ public class SyncHttpClient<E>
 					}
 				}
 
-				if ((requestMode == RequestMode.POST || requestMode == RequestMode.PUT) && postData != null)
+				if ((requestMode == RequestMode.POST || requestMode == RequestMode.PUT || requestMode == RequestMode.DELETE || requestMode == RequestMode.PATCH) && postData != null)
 				{
 					final long contentLength = postData.getContentLength();
 					if (this.response != null && !isCancelled())

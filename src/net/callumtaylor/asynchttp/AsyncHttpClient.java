@@ -28,6 +28,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpOptions;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -314,6 +315,74 @@ public class AsyncHttpClient
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
 		executeTask(RequestMode.GET, requestUri, headers, null, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param response The response handler for the request
+	 */
+	public void options(AsyncHttpResponseHandler response)
+	{
+		options("", null, null, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param response The response handler for the request
+	 */
+	public void options(String path, AsyncHttpResponseHandler response)
+	{
+		options(path, null, null, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void options(List<Header> headers, AsyncHttpResponseHandler response)
+	{
+		options("", null, headers, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void options(List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
+	{
+		options("", params, headers, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param response The response handler for the request
+	 */
+	public void options(String path, List<NameValuePair> params, AsyncHttpResponseHandler response)
+	{
+		options(path, params, null, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void options(String path, List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
+	{
+		if (!TextUtils.isEmpty(path))
+		{
+			requestUri = Uri.withAppendedPath(requestUri, path);
+		}
+
+		requestUri = RequestUtil.appendParams(requestUri, params);
+		executeTask(RequestMode.OPTIONS, requestUri, headers, null, response);
 	}
 
 	/**
@@ -1090,6 +1159,10 @@ public class AsyncHttpClient
 				{
 					request = new HttpPatch(requestUri.toString());
 				}
+				else if (requestMode == RequestMode.OPTIONS)
+				{
+					request = new HttpOptions(requestUri.toString());
+				}
 
 				HttpParams p = httpClient.getParams();
 				HttpClientParams.setRedirecting(p, allowRedirect);
@@ -1110,7 +1183,7 @@ public class AsyncHttpClient
 					}
 				}
 
-				if ((requestMode == RequestMode.POST || requestMode == RequestMode.PUT || requestMode == RequestMode.DELETE) && postData != null)
+				if ((requestMode == RequestMode.POST || requestMode == RequestMode.PUT || requestMode == RequestMode.DELETE || requestMode == RequestMode.PATCH) && postData != null)
 				{
 					final long contentLength = postData.getContentLength();
 					if (this.response != null && !isCancelled())

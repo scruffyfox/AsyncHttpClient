@@ -26,6 +26,11 @@ public enum RequestMode
 	HEAD("HEAD"),
 
 	/**
+	 * Gets a full list of available actions on an endpoint
+	 */
+	OPTIONS("OPTIONS"),
+
+	/**
 	 * Equivalent PUT call but supports partial objects
 	 */
 	PATCH("PATCH");
