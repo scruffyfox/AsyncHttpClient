@@ -23,7 +23,12 @@ public enum RequestMode
 	/**
 	 * Equivalent GET call but without any response body
 	 */
-	HEAD("HEAD");
+	HEAD("HEAD"),
+
+	/**
+	 * Equivalent PUT call but supports partial objects
+	 */
+	PATCH("PATCH");
 
 	private String canonicalStr = "";
 	private RequestMode(String canonicalStr)
