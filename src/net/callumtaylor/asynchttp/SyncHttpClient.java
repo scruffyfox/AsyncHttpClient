@@ -5,6 +5,7 @@ import android.os.NetworkOnMainThreadException;
 import android.text.TextUtils;
 
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
+import net.callumtaylor.asynchttp.obj.HttpDeleteWithBody;
 import net.callumtaylor.asynchttp.obj.HttpPatch;
 import net.callumtaylor.asynchttp.obj.HttpsFactory;
 import net.callumtaylor.asynchttp.obj.HttpsFactory.EasySSLSocketFactory;
@@ -22,7 +23,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
@@ -427,7 +427,7 @@ public class SyncHttpClient<E>
 	 */
 	public E delete(Processor<?> response)
 	{
-		return delete("", null, null, response);
+		return delete("", null, null, null, response);
 	}
 
 	/**
@@ -436,7 +436,7 @@ public class SyncHttpClient<E>
 	 */
 	public E delete(String path)
 	{
-		return delete(path, null, null, new ByteArrayProcessor());
+		return delete(path, null, null, null, new ByteArrayProcessor());
 	}
 
 	/**
@@ -446,7 +446,7 @@ public class SyncHttpClient<E>
 	 */
 	public E delete(String path, Processor<?> response)
 	{
-		return delete(path, null, null, response);
+		return delete(path, null, null, null, response);
 	}
 
 	/**
@@ -456,7 +456,7 @@ public class SyncHttpClient<E>
 	 */
 	public E delete(List<Header> headers, Processor<?> response)
 	{
-		return delete("", null, headers, response);
+		return delete("", null, null, headers, response);
 	}
 
 	/**
@@ -478,7 +478,7 @@ public class SyncHttpClient<E>
 	 */
 	public E delete(String path, List<NameValuePair> params, Processor<?> response)
 	{
-		return delete(path, params, null, response);
+		return delete(path, params, null, null, response);
 	}
 
 	/**
@@ -497,6 +497,71 @@ public class SyncHttpClient<E>
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
 		return executeTask(RequestMode.DELETE, requestUri, headers, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param deleteData The delete data entity to delete to the server
+	 * @param response The response handler for the request
+	 */
+	public E delete(List<NameValuePair> params, HttpEntity deleteData, Processor<?> response)
+	{
+		return delete("", params, deleteData, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param deleteData The delete data entity to delete to the server
+	 * @param response The response handler for the request
+	 */
+	public E delete(String path, HttpEntity deleteData, Processor<?> response)
+	{
+		return delete(path, null, deleteData, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param deleteData The delete data entity to delete to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E delete(String path, HttpEntity deleteData, List<Header> headers, Processor<?> response)
+	{
+		return delete(path, null, deleteData, headers, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param deleteData The delete data entity to delete to the server
+	 * @param response The response handler for the request
+	 */
+	public E delete(String path, List<NameValuePair> params, HttpEntity deleteData, Processor<?> response)
+	{
+		return delete(path, params, deleteData, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param deleteData The delete data entity to delete to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E delete(String path, List<NameValuePair> params, HttpEntity deleteData, List<Header> headers, Processor<?> response)
+	{
+		if (!TextUtils.isEmpty(path))
+		{
+			requestUri = Uri.withAppendedPath(requestUri, path);
+		}
+
+		requestUri = RequestUtil.appendParams(requestUri, params);
+		return executeTask(RequestMode.DELETE, requestUri, headers, deleteData, response);
 	}
 
 	/**
@@ -1097,7 +1162,7 @@ public class SyncHttpClient<E>
 				}
 				else if (requestMode == RequestMode.DELETE)
 				{
-					request = new HttpDelete(requestUri.toString());
+					request = new HttpDeleteWithBody(requestUri.toString());
 				}
 				else if (requestMode == RequestMode.HEAD)
 				{
