@@ -51,3 +51,4 @@ dependencies {
 	compile 'org.apache.httpcomponents:httpmime:4.2.5'
 }
 
+apply from: 'gradle/sonatype.gradle'
