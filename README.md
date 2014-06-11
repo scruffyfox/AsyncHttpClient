@@ -10,6 +10,12 @@ The library uses Apache's HttpRequest library.
 
 It consists of 2 different classes, `AsyncHttpClient` and `SyncHttpClient`. Obviously by the name, `AsyncHttpClient` is for asynchronous requests which uses the `AsyncTask` paradigm, and `SyncHttpClient` is for synchronous requests which should be handled **by yourself in a thread outside of the UI thread**.
 
+#Usage
+
+Simply import the gradle file into Android Studio and reference the dependancy in your `settings.gradle` and project's `build.gradle`
+
+Alternatively you can add the maven dependancy `net.callumtaylor.asynchttp:asynchttpclient:1.5`
+
 #Table of contents
 
 - AsyncHttpClient
