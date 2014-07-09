@@ -57,7 +57,7 @@ import java.util.zip.GZIPInputStream;
  * <b>Note:</b> Because of the way SyncHttpClient works, only one instance can be created
  * at a time. If one client makes 2 requests, the first request is canceled for the new
  * request. You can either wait for the first to finish before making the second, or you
- * can create two seperate instances.
+ * can create two separate instances.
  *
  * <b>Depends on</b>
  * <ul>
@@ -84,7 +84,7 @@ import java.util.zip.GZIPInputStream;
  * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
  * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
  *
- * JsonElement response = client.get(&quot;api/v1/&quot;, params, headers, new JsonProcessor());
+ * JsonElement response = client.get(&quot;api/v1/&quot;, params, headers, new JsonResponseHandler());
  * </pre>
  *
  * <h1>Example DELETE</h1>
@@ -97,7 +97,7 @@ import java.util.zip.GZIPInputStream;
  * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
  * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
  *
- * JsonElement response = client.delete(&quot;api/v1/&quot;, params, headers, new JsonProcessor());
+ * JsonElement response = client.delete(&quot;api/v1/&quot;, params, headers, new JsonResponseHandler());
  * </pre>
  *
  * <h1>Example POST - Single Entity</h1>
@@ -113,7 +113,7 @@ import java.util.zip.GZIPInputStream;
  * JsonEntity data = new JsonEntity(&quot;{\&quot;key\&quot;:\&quot;value\&quot;}&quot;);
  * GzippedEntity entity = new GzippedEntity(data);
  *
- * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonProcessor());
+ * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler());
  * </pre>
  *
  * <h1>Example POST - Multiple Entity + file</h1>
@@ -132,7 +132,7 @@ import java.util.zip.GZIPInputStream;
  * entity.addFilePart(&quot;image1.jpg&quot;, data1);
  * entity.addPart(&quot;content1&quot;, data2);
  *
- * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonProcessor());
+ * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler());
  * </pre>
  *
  * <h1>Example PUT</h1>
@@ -148,7 +148,7 @@ import java.util.zip.GZIPInputStream;
  * JsonEntity data = new JsonEntity(&quot;{\&quot;key\&quot;:\&quot;value\&quot;}&quot;);
  * GzippedEntity entity = new GzippedEntity(data);
  *
- * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonProcessor());
+ * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler());
  * </pre>
  *
  * <h1>Example custom processor</h1>
@@ -161,7 +161,7 @@ import java.util.zip.GZIPInputStream;
  * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
  * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
  *
- * String encodedResponse = client.get(&quot;api/v1/&quot;, params, headers, new Processor()
+ * String encodedResponse = client.get(&quot;api/v1/&quot;, params, headers, new ResponseHandler&lt;String&gt;()
  * {
  * 	private StringBuffer stringBuffer;
  *
