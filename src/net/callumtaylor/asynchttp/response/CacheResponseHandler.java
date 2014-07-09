@@ -9,7 +9,7 @@ import java.io.FileOutputStream;
  * large files. <b>note</b> This will delete any existing files
  * with the same file name
  */
-public abstract class CacheResponseHandler extends AsyncHttpResponseHandler
+public class CacheResponseHandler extends ResponseHandler<File>
 {
 	private final File mFile;
 	private BufferedOutputStream fos;

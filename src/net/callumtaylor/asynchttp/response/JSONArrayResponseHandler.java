@@ -8,7 +8,7 @@ import org.json.JSONArray;
  *
  * This is <b>not</b> the same as {@link JsonResponseHandler}
  */
-public abstract class JSONArrayResponseHandler extends AsyncHttpResponseHandler
+public class JSONArrayResponseHandler extends ResponseHandler<JSONArray>
 {
 	private StringBuffer stringBuffer;
 	private JSONArray content;

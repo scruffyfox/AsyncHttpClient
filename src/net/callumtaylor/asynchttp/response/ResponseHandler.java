@@ -15,17 +15,17 @@ import java.net.SocketTimeoutException;
  * onSend -> onPublishedUploadProgress -> onPublishedDownloadProgress -> beforeCallback -> onSuccess/onFailure -> beforeFinish -> onFinish
  * </pre>
  *
- * {@link AsyncHttpResponseHandler#onPublishedDownloadProgress}, {@link AsyncHttpResponseHandler#onPublishedUploadProgress},
- * {@link AsyncHttpResponseHandler#beforeCallback}, {@link AsyncHttpResponseHandler#onSuccess}, and {@link AsyncHttpResponseHandler#onFailure} all run in
+ * {@link ResponseHandler#onPublishedDownloadProgress}, {@link ResponseHandler#onPublishedUploadProgress},
+ * {@link ResponseHandler#beforeCallback}, {@link ResponseHandler#onSuccess}, and {@link ResponseHandler#onFailure} all run in
  * the background thread. All your processing should be handled in one of those
  * 4 methods and then either call to run on UI thread a new runnable, or handle
- * in {@link AsyncHttpResponseHandler#onFinish} which runs on the UI thread
+ * in {@link ResponseHandler#onFinish} which runs on the UI thread
  *
  * In order to get the content created from the response handler, you must
- * call {@link AsyncHttpResponseHandler#getContent} which can be accessed in {@link AsyncHttpResponseHandler#onSuccess} or
- * {@link AsyncHttpResponseHandler#onFailure}
+ * call {@link ResponseHandler#getContent} which can be accessed in {@link ResponseHandler#onSuccess} or
+ * {@link ResponseHandler#onFailure}
  */
-public abstract class AsyncHttpResponseHandler
+public abstract class ResponseHandler<E>
 {
 	private final ConnectionInfo connectionInfo = new ConnectionInfo();
 
@@ -43,13 +43,13 @@ public abstract class AsyncHttpResponseHandler
 	 * Called when processing the response from a stream. Use this to override
 	 * the processing of the InputStream to handle the response differently.
 	 * Default is to read the response as a byte-array which gets passed, chunk
-	 * by chunk, to {@link AsyncHttpResponseHandler#onPublishedDownloadProgress}
+	 * by chunk, to {@link ResponseHandler#onPublishedDownloadProgress}
 	 *
 	 * @param stream
 	 *            The response InputStream
 	 * @param client
 	 *            The client task. In order to call
-	 *            {@link AsyncHttpResponseHandler#onPublishedDownloadProgressUI}, you must call
+	 *            {@link ResponseHandler#onPublishedDownloadProgressUI}, you must call
 	 *            <code>client.postPublishProgress(new Packet(int readCount, int totalLength, boolean isDownload))</code>
 	 *            This is required when displaying a progress indicator.
 	 * @param totalLength
@@ -172,7 +172,7 @@ public abstract class AsyncHttpResponseHandler
 	public void onPublishedUploadProgressUI(long totalProcessed, long totalLength){}
 
 	/**
-	 * Called just before {@link AsyncHttpResponseHandler#onSuccess}
+	 * Called just before {@link ResponseHandler#onSuccess}
 	 */
 	public void beforeCallback(){}
 
@@ -180,7 +180,7 @@ public abstract class AsyncHttpResponseHandler
 	 * Override this method to efficiently generate your content from any buffers you have have
 	 * used.
 	 *
-	 * This is called directly after {@link AsyncHttpResponseHandler#onBeginPublishedDownloadProgress} has finished
+	 * This is called directly after {@link ResponseHandler#onBeginPublishedDownloadProgress} has finished
 	 */
 	public abstract void generateContent();
 
@@ -192,7 +192,7 @@ public abstract class AsyncHttpResponseHandler
 	 *
 	 * @return The generated content object
 	 */
-	public abstract Object getContent();
+	public abstract E getContent();
 
 	/**
 	 * Processes the response from the stream.
@@ -200,7 +200,7 @@ public abstract class AsyncHttpResponseHandler
 	 *
 	 * @return The modified data set, or null
 	 */
-	public abstract void onSuccess();
+	public void onSuccess(){}
 
 	/**
 	 * Called when a response was not 2xx.
@@ -210,7 +210,7 @@ public abstract class AsyncHttpResponseHandler
 	public void onFailure(){}
 
 	/**
-	 * Called before {@link AsyncHttpResponseHandler#onFinish}
+	 * Called before {@link ResponseHandler#onFinish}
 	 */
 	public void beforeFinish(){}
 

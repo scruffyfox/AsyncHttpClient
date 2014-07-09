@@ -3,7 +3,7 @@ package net.callumtaylor.asynchttp.response;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
-public abstract class JsonResponseHandler extends AsyncHttpResponseHandler
+public class JsonResponseHandler extends ResponseHandler<JsonElement>
 {
 	private StringBuffer stringBuffer;
 	private JsonElement content;

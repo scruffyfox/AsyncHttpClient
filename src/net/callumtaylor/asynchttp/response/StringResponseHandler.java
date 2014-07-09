@@ -1,6 +1,6 @@
 package net.callumtaylor.asynchttp.response;
 
-public abstract class StringResponseHandler extends AsyncHttpResponseHandler
+public class StringResponseHandler extends ResponseHandler<String>
 {
 	private StringBuffer stringBuffer;
 	private String content;
