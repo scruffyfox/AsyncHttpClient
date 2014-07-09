@@ -7,7 +7,7 @@ Here is an example custom processor. It's important to remember that you'll be d
 ```java
 SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");
 
-JsonElement encodedResponse = client.get("api/v1/", new Processor<JsonElement>()
+JsonElement encodedResponse = client.get("api/v1/", new ResponseHandler<JsonElement>()
 {
 	private StringBuffer stringBuffer;
 
