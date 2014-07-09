@@ -5,7 +5,7 @@ import android.graphics.BitmapFactory;
 
 import java.io.ByteArrayOutputStream;
 
-public abstract class BitmapResponseHandler extends AsyncHttpResponseHandler
+public class BitmapResponseHandler extends ResponseHandler<Bitmap>
 {
 	private ByteArrayOutputStream byteBuffer;
 	private Bitmap bitmap;

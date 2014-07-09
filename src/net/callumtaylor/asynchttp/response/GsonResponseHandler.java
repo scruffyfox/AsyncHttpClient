@@ -3,7 +3,7 @@ package net.callumtaylor.asynchttp.response;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-public abstract class GsonResponseHandler<T> extends AsyncHttpResponseHandler
+public class GsonResponseHandler<T> extends ResponseHandler<T>
 {
 	private Class<T> outClass;
 	private T content;

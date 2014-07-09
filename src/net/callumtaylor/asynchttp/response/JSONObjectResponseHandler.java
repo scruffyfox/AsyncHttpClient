@@ -8,7 +8,7 @@ import org.json.JSONObject;
  *
  * This is <b>not</b> the same as {@link JsonResponseHandler}
  */
-public abstract class JSONObjectResponseHandler extends AsyncHttpResponseHandler
+public class JSONObjectResponseHandler extends ResponseHandler<JSONObject>
 {
 	private StringBuffer stringBuffer;
 	private JSONObject content;
