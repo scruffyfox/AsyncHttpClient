@@ -3,7 +3,7 @@ buildscript {
 		mavenCentral()
 	}
 	dependencies {
-		classpath 'com.android.tools.build:gradle:0.12.+'
+		classpath 'com.android.tools.build:gradle:1.2.3'
 	}
 }
 
@@ -15,7 +15,7 @@ repositories {
 
 android {
 	compileSdkVersion 19
-	buildToolsVersion "19.1"
+	buildToolsVersion "19.1.0"
 
 	defaultConfig {
 		minSdkVersion 9
@@ -44,11 +44,13 @@ android {
 		exclude 'META-INF/LGPL2.1'
 		exclude 'LICENSE.txt'
 	}
+
+	lintOptions {
+		abortOnError false
+	}
 }
 
 dependencies {
 	compile 'com.google.code.gson:gson:2.+'
 	compile 'org.apache.httpcomponents:httpmime:4.2.5'
 }
-
-apply from: 'gradle/sonatype.gradle'

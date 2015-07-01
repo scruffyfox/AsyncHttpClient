@@ -14,7 +14,7 @@ It consists of 2 different classes, `AsyncHttpClient` and `SyncHttpClient`. Obvi
 
 Simply import the gradle file into Android Studio and reference the dependancy in your `settings.gradle` and project's `build.gradle`
 
-Alternatively you can add the maven dependancy `net.callumtaylor.asynchttp:asynchttpclient:1.5`
+Alternatively you can add the maven dependancy `net.callumtaylor:asynchttpclient:1.5` **N.B. Do NOT use `net.callumtaylor.asynchttp` for the group ID. This is an old ID and will NOT be updated**
 
 #Table of contents
 
