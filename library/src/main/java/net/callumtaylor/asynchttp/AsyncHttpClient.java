@@ -193,6 +193,11 @@ import java.util.zip.GZIPInputStream;
  */
 public class AsyncHttpClient
 {
+	/**
+	 * User agent to send with every request. Defaults to {@link RequestUtil#getDefaultUserAgent()}
+	 */
+	public static String userAgent = RequestUtil.getDefaultUserAgent();
+
 	private ClientExecutorTask executorTask;
 	private Uri requestUri;
 	private long requestTimeout = 0L;
@@ -1169,6 +1174,7 @@ public class AsyncHttpClient
 				HttpConnectionParams.setConnectionTimeout(p, (int)requestTimeout);
 				HttpConnectionParams.setSoTimeout(p, (int)requestTimeout);
 				request.setHeader("Connection", "close");
+				request.setHeader("User-Agent", userAgent);
 
 				if (postData != null)
 				{
