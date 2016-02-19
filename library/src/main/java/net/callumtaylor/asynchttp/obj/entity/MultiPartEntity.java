@@ -1,13 +1,13 @@
 package net.callumtaylor.asynchttp.obj.entity;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.entity.mime.content.StringBody;
+
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 
 public class MultiPartEntity extends MultipartEntity
 {
@@ -31,15 +31,14 @@ public class MultiPartEntity extends MultipartEntity
 
 	/**
 	 * Adds a new {@link HttpEntity} value to the entity. <b>note:</b> if you're
-	 * looking to add a {@link FileEntity}, use {@link addFilePart}
+	 * looking to add a {@link FileEntity}, use {@link #addFilePart(String, FileEntity)}
 	 *
-	 * @deprecated Use {@link addFilePart(String, ContentBody} instead
 	 * @param key
 	 *            The key to add
 	 * @param value
 	 *            The {@link HttpEntity} part to add
 	 */
-	@Deprecated public void addPart(String key, HttpEntity value)
+	public void addPart(String key, HttpEntity value)
 	{
 		try
 		{
@@ -54,13 +53,12 @@ public class MultiPartEntity extends MultipartEntity
 	/**
 	 * Adds a new file based {@link HttpEntity} to the entity.
 	 *
-	 * @deprecated Use {@link addFilePart(String, ContentBody} instead
 	 * @param key
 	 *            The key to add
 	 * @param value
-	 *            The {@link HttpEntity} part to add
+	 *            The {@link FileEntity} part to add
 	 */
-	@Deprecated public void addFilePart(String key, FileEntity value)
+	public void addFilePart(String key, FileEntity value)
 	{
 		try
 		{
@@ -74,12 +72,6 @@ public class MultiPartEntity extends MultipartEntity
 
 	/**
 	 * Adds a new file based {@link HttpEntity} to the entity.
-	 *
-	 * @deprecated Use {@link addFilePart(String, ContentBody} instead
-	 * @param key
-	 *            The key to add
-	 * @param value
-	 *            The {@link HttpEntity} part to add
 	 */
 	@Deprecated public void addFilePart(String key, String filename, FileEntity value)
 	{
