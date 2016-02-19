@@ -1,17 +1,9 @@
-
 package net.callumtaylor.asynchttp.response;
 
-import org.json.JSONObject;
-
-/**
- * This uses the standard JSON parser which is bundled with Android.
- *
- * This is <b>not</b> the same as {@link JsonResponseHandler}
- */
-public abstract class JSONObjectResponseHandler extends AsyncHttpResponseHandler
+public class StringResponseHandler extends ResponseHandler<String>
 {
 	private StringBuffer stringBuffer;
-	private JSONObject content;
+	private String content;
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
@@ -35,25 +27,18 @@ public abstract class JSONObjectResponseHandler extends AsyncHttpResponseHandler
 	}
 
 	/**
-	 * Generate the JSONObject from the buffer and remove it to allow the GC to clean up properly
+	 * Generate the String from the buffer and remove it to allow the GC to clean up properly
 	 */
 	@Override public void generateContent()
 	{
-		try
-		{
-			this.content = new JSONObject(stringBuffer.toString());
-			this.stringBuffer = null;
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();;
-		}
+		this.content = stringBuffer.toString();
+		this.stringBuffer = null;
 	}
 
 	/**
-	 * @return The data represented as a JSONObject primitive type
+	 * @return The data represented as a String
 	 */
-	@Override public JSONObject getContent()
+	@Override public String getContent()
 	{
 		return content;
 	}

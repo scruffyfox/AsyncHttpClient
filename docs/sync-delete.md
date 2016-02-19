@@ -4,7 +4,7 @@
 
 ```java
 	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");
-	JsonElement response = client.delete("api/v1/", new JsonProcessor());
+	JsonElement response = client.delete("api/v1/", new JsonResponseHandler());
 ```
 
 ###Example DELETE with parameters and headers
@@ -13,9 +13,9 @@
 	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");
 	List<NameValuePair> params = new ArrayList<NameValuePair>();
 	params.add(new BasicNameValuePair("key", "value"));
-	
+
 	List<Header> headers = new ArrayList<Header>();
 	headers.add(new BasicHeader("1", "2"));
-	 
-	JsonElement response = client.delete("api/v1/", params, headers, new JsonProcessor());
+
+	JsonElement response = client.delete("api/v1/", params, headers, new JsonResponseHandler());
 ```

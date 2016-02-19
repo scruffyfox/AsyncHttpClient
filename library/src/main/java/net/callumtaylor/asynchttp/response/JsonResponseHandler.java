@@ -1,11 +1,12 @@
-package net.callumtaylor.asynchttp.processor;
+package net.callumtaylor.asynchttp.response;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
-public class JsonProcessor extends Processor<JsonElement>
+public class JsonResponseHandler extends ResponseHandler<JsonElement>
 {
 	private StringBuffer stringBuffer;
+	private JsonElement content;
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
@@ -29,13 +30,19 @@ public class JsonProcessor extends Processor<JsonElement>
 	}
 
 	/**
-	 * Processes the response from the stream.
-	 * This is <b>not</b> ran on the UI thread
-	 *
-	 * @return The data represented as a gson JsonElement primitive type
+	 * Generate the json object from the buffer and remove it to allow the GC to clean up properly
+	 */
+	@Override public void generateContent()
+	{
+		this.content = new JsonParser().parse(stringBuffer.toString());
+		this.stringBuffer = null;
+	}
+
+	/**
+	 * @return The data represented as a GSON JsonElement primitive type
 	 */
 	@Override public JsonElement getContent()
 	{
-		return new JsonParser().parse(stringBuffer.toString());
+		return this.content;
 	}
 }

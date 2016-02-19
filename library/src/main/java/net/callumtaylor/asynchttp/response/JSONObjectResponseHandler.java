@@ -1,16 +1,17 @@
 
-package net.callumtaylor.asynchttp.processor;
+package net.callumtaylor.asynchttp.response;
 
-import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * This uses the standard JSON parser which is bundled with Android.
  *
- * This is <b>not</b> the same as {@link JsonProcessor}
+ * This is <b>not</b> the same as {@link JsonResponseHandler}
  */
-public class JSONArrayProcessor extends Processor<JSONArray>
+public class JSONObjectResponseHandler extends ResponseHandler<JSONObject>
 {
 	private StringBuffer stringBuffer;
+	private JSONObject content;
 
 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
@@ -34,20 +35,26 @@ public class JSONArrayProcessor extends Processor<JSONArray>
 	}
 
 	/**
-	 * Processes the response from the stream.
-	 * This is <b>not</b> ran on the UI thread
-	 *
-	 * @return The data represented as a gson JsonElement primitive type
+	 * Generate the JSONObject from the buffer and remove it to allow the GC to clean up properly
 	 */
-	@Override public JSONArray getContent()
+	@Override public void generateContent()
 	{
 		try
 		{
-			return new JSONArray(stringBuffer.toString());
+			this.content = new JSONObject(stringBuffer.toString());
+			this.stringBuffer = null;
 		}
 		catch (Exception e)
 		{
-			return null;
+			e.printStackTrace();;
 		}
+	}
+
+	/**
+	 * @return The data represented as a JSONObject primitive type
+	 */
+	@Override public JSONObject getContent()
+	{
+		return content;
 	}
 }

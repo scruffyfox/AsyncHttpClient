@@ -5,8 +5,8 @@
  * signing.keyId=<HEXADECIMCAL KEY ID RETRIVABLE VIA gpg --list-keys>
  * signing.password=<KEY PASSWORD>
  * signing.secretKeyRingFile=<PATH TO KEY RING, USUALLY ~/.gnupg/secring.gpg>
- * SONATYPE_USERNAME=<SONATYPE USERNAME>
- * SONATYPE_PASSWORD=<CORRESPONDING PASSWORD>
+ * ARTIFACTORY_USERNAME=<USERNAME>
+ * ARTIFACTORY_PASSWORD=<CORRESPONDING PASSWORD>
  *
  * Copyright (C) 2014 SCVNGR, Inc. d/b/a LevelUp
  *
@@ -59,6 +59,15 @@ def setupPomInfo(pom)
 	}
 }
 
+if (JavaVersion.current().isJava8Compatible())
+{
+	allprojects {
+		tasks.withType(Javadoc) {
+			options.addStringOption('Xdoclint:none', '-quiet')
+		}
+	}
+}
+
 // Extra task definition is needed to work around naming conflict between maven and android plugins
 // http://stackoverflow.com/questions/18559932
 task installArchives(type: Upload) {
@@ -69,8 +78,8 @@ task installArchives(type: Upload) {
 	}
 }
 
-ext.SONATYPE_USERNAME = properties.get('NEXUS_USERNAME', '')
-ext.SONATYPE_PASSWORD = properties.get('NEXUS_PASSWORD', '')
+ext.ARTIFACTORY_USERNAME = properties.get('ARTIFACTORY_USERNAME', '')
+ext.ARTIFACTORY_PASSWORD = properties.get('ARTIFACTORY_PASSWORD', '')
 
 afterEvaluate { project ->
 	uploadArchives {
@@ -79,12 +88,12 @@ afterEvaluate { project ->
 				beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 				setupPomInfo(pom)
 
-				repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
-					authentication(userName: SONATYPE_USERNAME, password: SONATYPE_PASSWORD)
+				repository(url: 'http://oss.3sidedcube.com:8081/artifactory/internal') {
+					authentication(userName: ARTIFACTORY_USERNAME, password: ARTIFACTORY_PASSWORD)
 				}
 
-				snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
-					authentication(userName: SONATYPE_USERNAME, password: SONATYPE_PASSWORD)
+				snapshotRepository(url: 'http://oss.3sidedcube.com:8081/artifactory/snapshot') {
+					authentication(userName: ARTIFACTORY_USERNAME, password: ARTIFACTORY_PASSWORD)
 				}
 			}
 		}

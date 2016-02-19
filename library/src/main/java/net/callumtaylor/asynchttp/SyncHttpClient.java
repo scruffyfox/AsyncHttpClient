@@ -1,23 +1,18 @@
 package net.callumtaylor.asynchttp;
 
-import android.annotation.TargetApi;
 import android.net.Uri;
-import android.os.AsyncTask;
-import android.os.AsyncTask.Status;
-import android.os.Build;
 import android.text.TextUtils;
 
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
 import net.callumtaylor.asynchttp.obj.HttpDeleteWithBody;
 import net.callumtaylor.asynchttp.obj.HttpPatch;
-import net.callumtaylor.asynchttp.obj.HttpsFactory;
 import net.callumtaylor.asynchttp.obj.HttpsFactory.EasySSLSocketFactory;
-import net.callumtaylor.asynchttp.obj.Packet;
 import net.callumtaylor.asynchttp.obj.RequestMode;
 import net.callumtaylor.asynchttp.obj.RequestUtil;
 import net.callumtaylor.asynchttp.obj.entity.ProgressEntityWrapper;
 import net.callumtaylor.asynchttp.obj.entity.ProgressEntityWrapper.ProgressListener;
-import net.callumtaylor.asynchttp.response.AsyncHttpResponseHandler;
+import net.callumtaylor.asynchttp.response.ByteArrayResponseHandler;
+import net.callumtaylor.asynchttp.response.ResponseHandler;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -32,7 +27,6 @@ import org.apache.http.client.methods.HttpOptions;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.client.params.HttpClientParams;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.params.ConnManagerPNames;
 import org.apache.http.conn.params.ConnPerRouteBean;
@@ -51,76 +45,65 @@ import org.apache.http.protocol.HttpContext;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 /**
  * @mainpage
  *
- * The client class used for initiating HTTP requests using an AsyncTask. It
- * follows a RESTful paradigm for the connections with the 4 possible methods,
- * GET, POST, PUT and DELETE.
+ * This class is a synchronous class which runs on any thread that the code was created
+ * on. This will throw a {@link android.os.NetworkOnMainThreadException} if ran on the UI thread.
  *
- * <b>Note:</b> Because AsyncHttpClient uses
- * AsyncTask, only one instance can be created at a time. If one client makes 2
- * requests, the first request is canceled for the new request. You can either
- * wait for the first to finish before making the second, or you can create two
- * seperate instances.
+ * <b>Note:</b> Because of the way SyncHttpClient works, only one instance can be created
+ * at a time. If one client makes 2 requests, the first request is canceled for the new
+ * request. You can either wait for the first to finish before making the second, or you
+ * can create two separate instances.
  *
  * <b>Depends on</b>
  * <ul>
- * <li>{@link AsyncHttpResponseHandler}</li>
+ * <li>{@link net.callumtaylor.asynchttp.response.ResponseHandler}</li>
  * <li>{@link HttpEntity}</li>
  * <li>{@link NameValuePair}</li>
  * <li>{@link ConnectionInfo}</li>
- * <li>{@link Packet}</li>
+ * <li>{@link net.callumtaylor.asynchttp.obj.Packet}</li>
  * <li>{@link RequestMode}</li>
  * <li>{@link RequestUtil}</li>
- * <li>{@link HttpsFactory}</li>
+ * <li>{@link net.callumtaylor.asynchttp.obj.HttpsFactory}</li>
  * </ul>
  * <h1>Example GET</h1>
  *
+ * SyncHttpClient is a paramitized class which means the type you infer to it, is the type
+ * that gets returned when calling the method. When supplying a {@link net.callumtaylor.asynchttp.response.ResponseHandler}, that
+ * processor must also paramitized with the same type as the SyncHttpClient instance.
+ *
  * <pre>
- * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
+ * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
  * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
  * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
  *
  * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
  * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
  *
- * client.get(&quot;api/v1/&quot;, params, headers, new JsonResponseHandler()
- * {
- * 	&#064;Override public void onSuccess()
- * 	{
- * 		JsonElement result = getContent();
- * 	}
- * });
+ * JsonElement response = client.get(&quot;api/v1/&quot;, params, headers, new JsonResponseHandler());
  * </pre>
  *
  * <h1>Example DELETE</h1>
  *
  * <pre>
- * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
+ * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
  * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
  * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
  *
  * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
  * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
  *
- * client.delete(&quot;api/v1/&quot;, params, headers, new JsonResponseHandler()
- * {
- * 	&#064;Override public void onSuccess()
- * 	{
- * 		JsonElement result = getContent();
- * 	}
- * });
+ * JsonElement response = client.delete(&quot;api/v1/&quot;, params, headers, new JsonResponseHandler());
  * </pre>
  *
  * <h1>Example POST - Single Entity</h1>
  *
  * <pre>
- * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
+ * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
  * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
  * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
  *
@@ -130,19 +113,13 @@ import java.util.zip.GZIPInputStream;
  * JsonEntity data = new JsonEntity(&quot;{\&quot;key\&quot;:\&quot;value\&quot;}&quot;);
  * GzippedEntity entity = new GzippedEntity(data);
  *
- * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
- * {
- * 	&#064;Override public void onSuccess()
- * 	{
- * 		JsonElement result = getContent();
- * 	}
- * });
+ * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler());
  * </pre>
  *
  * <h1>Example POST - Multiple Entity + file</h1>
  *
  * <pre>
- * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
+ * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
  * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
  * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
  *
@@ -155,19 +132,13 @@ import java.util.zip.GZIPInputStream;
  * entity.addFilePart(&quot;image1.jpg&quot;, data1);
  * entity.addPart(&quot;content1&quot;, data2);
  *
- * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
- * {
- * 	&#064;Override public void onSuccess()
- * 	{
- * 		JsonElement result = getContent();
- * 	}
- * });
+ * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler());
  * </pre>
  *
  * <h1>Example PUT</h1>
  *
  * <pre>
- * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
+ * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
  * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
  * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
  *
@@ -177,11 +148,55 @@ import java.util.zip.GZIPInputStream;
  * JsonEntity data = new JsonEntity(&quot;{\&quot;key\&quot;:\&quot;value\&quot;}&quot;);
  * GzippedEntity entity = new GzippedEntity(data);
  *
- * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
+ * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler());
+ * </pre>
+ *
+ * <h1>Example custom processor</h1>
+ *
+ * <pre>
+ * SyncHttpClient<String> client = new SyncHttpClient<String>(&quot;http://example.com&quot;);
+ * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
+ * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
+ *
+ * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
+ * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
+ *
+ * String encodedResponse = client.get(&quot;api/v1/&quot;, params, headers, new ResponseHandler&lt;String&gt;()
  * {
- * 	&#064;Override public void onSuccess()
+ * 	private StringBuffer stringBuffer;
+ *
+ * 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
  * 	{
- * 		JsonElement result = getContent();
+ *  	if (stringBuffer == null)
+ *  	{
+ * 			int total = (int)(totalLength > Integer.MAX_VALUE ? Integer.MAX_VALUE : totalLength);
+ * 			stringBuffer = new StringBuffer(Math.max(8192, total));
+ * 		}
+ *
+ * 		if (chunk != null)
+ *		{
+ * 			try
+ * 			{
+ *				// Shift all the bytes right
+ * 				byte tmp = chunk[chunk.length - 1];
+ *				for (int index = chunk.length - 2; index >= 0; index--)
+ *				{
+ *					chunk[index + 1] = chunk[index];
+ *				}
+ *
+ *				chunk[0] = tmp;
+ * 				stringBuffer.append(new String(chunk, 0, chunkLength, "UTF-8").);
+ * 			}
+ * 			catch (Exception e)
+ * 			{
+ * 				e.printStackTrace();
+ * 			}
+ *  	}
+ * 	}
+ *
+ * 	@Override public String getContent()
+ * 	{
+ *  	return stringBuffer.toString();
  * 	}
  * });
  * </pre>
@@ -191,19 +206,23 @@ import java.util.zip.GZIPInputStream;
  *
  * @author Callum Taylor &lt;callumtaylor.net&gt; &#064;scruffyfox
  */
-public class AsyncHttpClient
+public class SyncHttpClient<E>
 {
-	private ClientExecutorTask executorTask;
+	/**
+	 * User agent to send with every request. Defaults to {@link RequestUtil#getDefaultUserAgent()}
+	 */
+	public static String userAgent = RequestUtil.getDefaultUserAgent();
+
 	private Uri requestUri;
 	private long requestTimeout = 0L;
 	private boolean allowAllSsl = false;
-	private boolean allowRedirect = true;
+	private ClientExecutorTask<E> executor;
 
 	/**
 	 * Creates a new client using a base Url without a timeout
 	 * @param baseUrl The base connection url
 	 */
-	public AsyncHttpClient(String baseUrl)
+	public SyncHttpClient(String baseUrl)
 	{
 		this(baseUrl, 0);
 	}
@@ -212,7 +231,7 @@ public class AsyncHttpClient
 	 * Creates a new client using a base Uri without a timeout
 	 * @param baseUri The base connection uri
 	 */
-	public AsyncHttpClient(Uri baseUri)
+	public SyncHttpClient(Uri baseUri)
 	{
 		this(baseUri, 0);
 	}
@@ -222,7 +241,7 @@ public class AsyncHttpClient
 	 * @param baseUrl The base connection url
 	 * @param timeout The timeout in MS
 	 */
-	public AsyncHttpClient(String baseUrl, long timeout)
+	public SyncHttpClient(String baseUrl, long timeout)
 	{
 		this(Uri.parse(baseUrl), timeout);
 	}
@@ -232,20 +251,20 @@ public class AsyncHttpClient
 	 * @param baseUri The base connection uri
 	 * @param timeout The timeout in MS
 	 */
-	public AsyncHttpClient(Uri baseUri, long timeout)
+	public SyncHttpClient(Uri baseUri, long timeout)
 	{
 		requestUri = baseUri;
 		requestTimeout = timeout;
 	}
 
 	/**
-	 * Cancels a request if it's running
+	 * Cancels the current executor task
 	 */
 	public void cancel()
 	{
-		if (executorTask != null && executorTask.getStatus() == Status.RUNNING)
+		if (executor != null)
 		{
-			executorTask.cancel(true);
+			executor.cancel();
 		}
 	}
 
@@ -253,9 +272,18 @@ public class AsyncHttpClient
 	 * Performs a GET request on the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void get(AsyncHttpResponseHandler response)
+	public E get(ResponseHandler<?> response)
 	{
-		get("", null, null, response);
+		return get("", null, null, response);
+	}
+
+	/**
+	 * Performs a GET request on the baseUri
+	 * @param path The path extended from the baseUri
+	 */
+	public E get(String path)
+	{
+		return get(path, null, null, new ByteArrayResponseHandler());
 	}
 
 	/**
@@ -263,9 +291,9 @@ public class AsyncHttpClient
 	 * @param path The path extended from the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void get(String path, AsyncHttpResponseHandler response)
+	public E get(String path, ResponseHandler<?> response)
 	{
-		get(path, null, null, response);
+		return get(path, null, null, response);
 	}
 
 	/**
@@ -273,9 +301,9 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void get(List<Header> headers, AsyncHttpResponseHandler response)
+	public E get(List<Header> headers, ResponseHandler<?> response)
 	{
-		get("", null, headers, response);
+		return get("", null, headers, response);
 	}
 
 	/**
@@ -284,19 +312,20 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void get(List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
+	public E get(List<NameValuePair> params, List<Header> headers, ResponseHandler<?> response)
 	{
-		get("", params, headers, response);
+		return get("", params, headers, response);
 	}
 
 	/**
 	 * Performs a GET request on the baseUri
 	 * @param path The path extended from the baseUri
+	 * @param params The request params for the connection
 	 * @param response The response handler for the request
 	 */
-	public void get(String path, List<NameValuePair> params, AsyncHttpResponseHandler response)
+	public E get(String path, List<NameValuePair> params, ResponseHandler<?> response)
 	{
-		get(path, params, null, response);
+		return get(path, params, null, response);
 	}
 
 	/**
@@ -306,7 +335,7 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void get(String path, List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
+	public E get(String path, List<NameValuePair> params, List<Header> headers, ResponseHandler<?> response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -314,16 +343,25 @@ public class AsyncHttpClient
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		executeTask(RequestMode.GET, requestUri, headers, null, response);
+		return executeTask(RequestMode.GET, requestUri, headers, null, response);
 	}
 
 	/**
 	 * Performs a OPTIONS request on the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void options(AsyncHttpResponseHandler response)
+	public E options(ResponseHandler<?> response)
 	{
-		options("", null, null, response);
+		return options("", null, null, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param path The path extended from the baseUri
+	 */
+	public E options(String path)
+	{
+		return options(path, null, null, new ByteArrayResponseHandler());
 	}
 
 	/**
@@ -331,9 +369,9 @@ public class AsyncHttpClient
 	 * @param path The path extended from the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void options(String path, AsyncHttpResponseHandler response)
+	public E options(String path, ResponseHandler<?> response)
 	{
-		options(path, null, null, response);
+		return options(path, null, null, response);
 	}
 
 	/**
@@ -341,9 +379,9 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void options(List<Header> headers, AsyncHttpResponseHandler response)
+	public E options(List<Header> headers, ResponseHandler<?> response)
 	{
-		options("", null, headers, response);
+		return options("", null, headers, response);
 	}
 
 	/**
@@ -352,19 +390,20 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void options(List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
+	public E options(List<NameValuePair> params, List<Header> headers, ResponseHandler<?> response)
 	{
-		options("", params, headers, response);
+		return options("", params, headers, response);
 	}
 
 	/**
 	 * Performs a OPTIONS request on the baseUri
 	 * @param path The path extended from the baseUri
+	 * @param params The request params for the connection
 	 * @param response The response handler for the request
 	 */
-	public void options(String path, List<NameValuePair> params, AsyncHttpResponseHandler response)
+	public E options(String path, List<NameValuePair> params, ResponseHandler<?> response)
 	{
-		options(path, params, null, response);
+		return options(path, params, null, response);
 	}
 
 	/**
@@ -374,7 +413,7 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void options(String path, List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
+	public E options(String path, List<NameValuePair> params, List<Header> headers, ResponseHandler<?> response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -382,16 +421,25 @@ public class AsyncHttpClient
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		executeTask(RequestMode.OPTIONS, requestUri, headers, null, response);
+		return executeTask(RequestMode.OPTIONS, requestUri, headers, null, response);
 	}
 
 	/**
 	 * Performs a HEAD request on the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void head(AsyncHttpResponseHandler response)
+	public E head(ResponseHandler<?> response)
 	{
-		head("", null, null, response);
+		return head("", null, null, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param path The path extended from the baseUri
+	 */
+	public E head(String path)
+	{
+		return head(path, null, null, new ByteArrayResponseHandler());
 	}
 
 	/**
@@ -399,9 +447,9 @@ public class AsyncHttpClient
 	 * @param path The path extended from the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void head(String path, AsyncHttpResponseHandler response)
+	public E head(String path, ResponseHandler<?> response)
 	{
-		head(path, null, null, response);
+		return head(path, null, null, response);
 	}
 
 	/**
@@ -409,9 +457,9 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void head(List<Header> headers, AsyncHttpResponseHandler response)
+	public E head(List<Header> headers, ResponseHandler<?> response)
 	{
-		head("", null, headers, response);
+		return head("", null, headers, response);
 	}
 
 	/**
@@ -420,19 +468,20 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void head(List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
+	public E head(List<NameValuePair> params, List<Header> headers, ResponseHandler<?> response)
 	{
-		head("", params, headers, response);
+		return head("", params, headers, response);
 	}
 
 	/**
 	 * Performs a HEAD request on the baseUri
 	 * @param path The path extended from the baseUri
+	 * @param params The request params for the connection
 	 * @param response The response handler for the request
 	 */
-	public void head(String path, List<NameValuePair> params, AsyncHttpResponseHandler response)
+	public E head(String path, List<NameValuePair> params, ResponseHandler<?> response)
 	{
-		head(path, params, null, response);
+		return head(path, params, null, response);
 	}
 
 	/**
@@ -442,7 +491,7 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void head(String path, List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
+	public E head(String path, List<NameValuePair> params, List<Header> headers, ResponseHandler<?> response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -450,16 +499,25 @@ public class AsyncHttpClient
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		executeTask(RequestMode.HEAD, requestUri, headers, null, response);
+		return executeTask(RequestMode.HEAD, requestUri, headers, null, response);
 	}
 
 	/**
 	 * Performs a DELETE request on the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void delete(AsyncHttpResponseHandler response)
+	public E delete(ResponseHandler<?> response)
 	{
-		delete("", null, null, null, response);
+		return delete("", null, null, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 */
+	public E delete(String path)
+	{
+		return delete(path, null, null, null, new ByteArrayResponseHandler());
 	}
 
 	/**
@@ -467,19 +525,19 @@ public class AsyncHttpClient
 	 * @param path The path extended from the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void delete(String path, AsyncHttpResponseHandler response)
+	public E delete(String path, ResponseHandler<?> response)
 	{
-		delete(path, null, null, null, response);
+		return delete(path, null, null, null, response);
 	}
 
 	/**
 	 * Performs a DELETE request on the baseUri
-	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void delete(List<NameValuePair> params, AsyncHttpResponseHandler response)
+	public E delete(List<Header> headers, ResponseHandler<?> response)
 	{
-		delete("", params, null, null, response);
+		return delete("", null, null, headers, response);
 	}
 
 	/**
@@ -488,52 +546,20 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void delete(List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
+	public E delete(List<NameValuePair> params, List<Header> headers, ResponseHandler<?> response)
 	{
-		delete("", params, null, headers, response);
-	}
-
-	/**
-	 * Performs a DELETE request on the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public void delete(HttpEntity postData, AsyncHttpResponseHandler response)
-	{
-		delete("", null, postData, null, response);
-	}
-
-	/**
-	 * Performs a DELETE request on the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public void delete(HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
-	{
-		delete("", null, postData, headers, response);
-	}
-
-	/**
-	 * Performs a DELETE request on the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public void delete(List<NameValuePair> params, HttpEntity postData, AsyncHttpResponseHandler response)
-	{
-		delete("", params, postData, null, response);
+		return delete("", params, headers, response);
 	}
 
 	/**
 	 * Performs a DELETE request on the baseUri
 	 * @param path The path extended from the baseUri
-	 * @param params The Query params to append to the baseUri
+	 * @param params The request params for the connection
 	 * @param response The response handler for the request
 	 */
-	public void delete(String path, List<NameValuePair> params, AsyncHttpResponseHandler response)
+	public E delete(String path, List<NameValuePair> params, ResponseHandler<?> response)
 	{
-		delete(path, params, null, null, response);
+		return delete(path, params, null, null, response);
 	}
 
 	/**
@@ -543,55 +569,7 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void delete(String path, List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
-	{
-		delete(path, params, null, headers, response);
-	}
-
-	/**
-	 * Performs a DELETE request on the baseUri
-	 * @param path The path extended from the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public void delete(String path, HttpEntity postData, AsyncHttpResponseHandler response)
-	{
-		delete(path, null, postData, null, response);
-	}
-
-	/**
-	 * Performs a DELETE request on the baseUri
-	 * @param path The path extended from the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public void delete(String path, HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
-	{
-		delete(path, null, postData, headers, response);
-	}
-
-	/**
-	 * Performs a DELETE request on the baseUri
-	 * @param path The path extended from the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public void delete(String path, List<NameValuePair> params, HttpEntity postData, AsyncHttpResponseHandler response)
-	{
-		delete(path, params, postData, null, response);
-	}
-
-	/**
-	 * Performs a DELETE request on the baseUri
-	 * @param path The path extended from the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public void delete(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
+	public E delete(String path, List<NameValuePair> params, List<Header> headers, ResponseHandler<?> response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -599,16 +577,90 @@ public class AsyncHttpClient
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		executeTask(RequestMode.DELETE, requestUri, headers, postData, response);
+		return executeTask(RequestMode.DELETE, requestUri, headers, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param deleteData The delete data entity to delete to the server
+	 * @param response The response handler for the request
+	 */
+	public E delete(List<NameValuePair> params, HttpEntity deleteData, ResponseHandler<?> response)
+	{
+		return delete("", params, deleteData, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param deleteData The delete data entity to delete to the server
+	 * @param response The response handler for the request
+	 */
+	public E delete(String path, HttpEntity deleteData, ResponseHandler<?> response)
+	{
+		return delete(path, null, deleteData, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param deleteData The delete data entity to delete to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E delete(String path, HttpEntity deleteData, List<Header> headers, ResponseHandler<?> response)
+	{
+		return delete(path, null, deleteData, headers, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param deleteData The delete data entity to delete to the server
+	 * @param response The response handler for the request
+	 */
+	public E delete(String path, List<NameValuePair> params, HttpEntity deleteData, ResponseHandler<?> response)
+	{
+		return delete(path, params, deleteData, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param deleteData The delete data entity to delete to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E delete(String path, List<NameValuePair> params, HttpEntity deleteData, List<Header> headers, ResponseHandler<?> response)
+	{
+		if (!TextUtils.isEmpty(path))
+		{
+			requestUri = Uri.withAppendedPath(requestUri, path);
+		}
+
+		requestUri = RequestUtil.appendParams(requestUri, params);
+		return executeTask(RequestMode.DELETE, requestUri, headers, deleteData, response);
 	}
 
 	/**
 	 * Performs a POST request on the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void post(AsyncHttpResponseHandler response)
+	public E post(ResponseHandler<?> response)
 	{
-		post("", null, null, null, response);
+		return post("", null, null, null, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUr
+	 * @param path The path extended from the baseUri
+	 */
+	public E post(String path)
+	{
+		return post(path, null, null, null, new ByteArrayResponseHandler());
 	}
 
 	/**
@@ -616,9 +668,9 @@ public class AsyncHttpClient
 	 * @param path The path extended from the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void post(String path, AsyncHttpResponseHandler response)
+	public E post(String path, ResponseHandler<?> response)
 	{
-		post(path, null, null, null, response);
+		return post(path, null, null, null, response);
 	}
 
 	/**
@@ -626,75 +678,75 @@ public class AsyncHttpClient
 	 * @param params The Query params to append to the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void post(List<NameValuePair> params, AsyncHttpResponseHandler response)
+	public E post(List<NameValuePair> params, ResponseHandler<?> response)
 	{
-		post("", params, null, null, response);
+		return post("", params, null, null, response);
 	}
 
 	/**
 	 * Performs a POST request on the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public void post(List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
-	{
-		post("", params, null, headers, response);
-	}
-
-	/**
-	 * Performs a POST request on the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public void post(HttpEntity postData, AsyncHttpResponseHandler response)
-	{
-		post("", null, postData, null, response);
-	}
-
-	/**
-	 * Performs a POST request on the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public void post(HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
-	{
-		post("", null, postData, headers, response);
-	}
-
-	/**
-	 * Performs a POST request on the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public void post(List<NameValuePair> params, HttpEntity postData, AsyncHttpResponseHandler response)
-	{
-		post("", params, postData, null, response);
-	}
-
-	/**
-	 * Performs a POST request on the baseUri
-	 * @param path The path extended from the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param response The response handler for the request
-	 */
-	public void post(String path, List<NameValuePair> params, AsyncHttpResponseHandler response)
-	{
-		post(path, params, null, null, response);
-	}
-
-	/**
-	 * Performs a POST request on the baseUri
-	 * @param path The path extended from the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void post(String path, List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
+	public E post(List<NameValuePair> params, List<Header> headers, ResponseHandler<?> response)
 	{
-		post(path, params, null, headers, response);
+		return post("", params, null, headers, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public E post(HttpEntity postData, ResponseHandler<?> response)
+	{
+		return post("", null, postData, null, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E post(HttpEntity postData, List<Header> headers, ResponseHandler<?> response)
+	{
+		return post("", null, postData, headers, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public E post(List<NameValuePair> params, HttpEntity postData, ResponseHandler<?> response)
+	{
+		return post("", params, postData, null, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param response The response handler for the request
+	 */
+	public E post(String path, List<NameValuePair> params, ResponseHandler<?> response)
+	{
+		return post(path, params, null, null, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E post(String path, List<NameValuePair> params, List<Header> headers, ResponseHandler<?> response)
+	{
+		return post(path, params, null, headers, response);
 	}
 
 	/**
@@ -703,9 +755,9 @@ public class AsyncHttpClient
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public void post(String path, HttpEntity postData, AsyncHttpResponseHandler response)
+	public E post(String path, HttpEntity postData, ResponseHandler<?> response)
 	{
-		post(path, null, postData, null, response);
+		return post(path, null, postData, null, response);
 	}
 
 	/**
@@ -715,9 +767,9 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void post(String path, HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
+	public E post(String path, HttpEntity postData, List<Header> headers, ResponseHandler<?> response)
 	{
-		post(path, null, postData, headers, response);
+		return post(path, null, postData, headers, response);
 	}
 
 	/**
@@ -727,9 +779,9 @@ public class AsyncHttpClient
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public void post(String path, List<NameValuePair> params, HttpEntity postData, AsyncHttpResponseHandler response)
+	public E post(String path, List<NameValuePair> params, HttpEntity postData, ResponseHandler<?> response)
 	{
-		post(path, params, postData, null, response);
+		return post(path, params, postData, null, response);
 	}
 
 	/**
@@ -740,7 +792,7 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void post(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
+	public E post(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, ResponseHandler<?> response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -748,16 +800,25 @@ public class AsyncHttpClient
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		executeTask(RequestMode.POST, requestUri, headers, postData, response);
+		return executeTask(RequestMode.POST, requestUri, headers, postData, response);
 	}
 
 	/**
 	 * Performs a PUT request on the baseUr
 	 * @param response The response handler for the request
 	 */
-	public void put(AsyncHttpResponseHandler response)
+	public E put(ResponseHandler<?> response)
 	{
-		put("", null, null, null, response);
+		return put("", null, null, null, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUr
+	 * @param path The path extended from the baseUri
+	 */
+	public E put(String path)
+	{
+		return put(path, null, null, null, new ByteArrayResponseHandler());
 	}
 
 	/**
@@ -765,9 +826,9 @@ public class AsyncHttpClient
 	 * @param path The path extended from the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void put(String path, AsyncHttpResponseHandler response)
+	public E put(String path, ResponseHandler<?> response)
 	{
-		put(path, null, null, null, response);
+		return put(path, null, null, null, response);
 	}
 
 	/**
@@ -775,75 +836,75 @@ public class AsyncHttpClient
 	 * @param params The Query params to append to the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void put(List<NameValuePair> params, AsyncHttpResponseHandler response)
+	public E put(List<NameValuePair> params, ResponseHandler<?> response)
 	{
-		put("", params, null, null, response);
+		return put("", params, null, null, response);
 	}
 
 	/**
 	 * Performs a PUT request on the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public void put(List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
-	{
-		put("", params, null, headers, response);
-	}
-
-	/**
-	 * Performs a PUT request on the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public void put(HttpEntity postData, AsyncHttpResponseHandler response)
-	{
-		put("", null, postData, null, response);
-	}
-
-	/**
-	 * Performs a PUT request on the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public void put(HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
-	{
-		put("", null, postData, headers, response);
-	}
-
-	/**
-	 * Performs a PUT request on the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public void put(List<NameValuePair> params, HttpEntity postData, AsyncHttpResponseHandler response)
-	{
-		put("", params, postData, null, response);
-	}
-
-	/**
-	 * Performs a PUT request on the baseUri
-	 * @param path The path extended from the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param response The response handler for the request
-	 */
-	public void put(String path, List<NameValuePair> params, AsyncHttpResponseHandler response)
-	{
-		put(path, params, null, null, response);
-	}
-
-	/**
-	 * Performs a PUT request on the baseUri
-	 * @param path The path extended from the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void put(String path, List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
+	public E put(List<NameValuePair> params, List<Header> headers, ResponseHandler<?> response)
 	{
-		put(path, params, null, headers, response);
+		return put("", params, null, headers, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public E put(HttpEntity postData, ResponseHandler<?> response)
+	{
+		return put("", null, postData, null, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E put(HttpEntity postData, List<Header> headers, ResponseHandler<?> response)
+	{
+		return put("", null, postData, headers, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public E put(List<NameValuePair> params, HttpEntity postData, ResponseHandler<?> response)
+	{
+		return put("", params, postData, null, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param response The response handler for the request
+	 */
+	public E put(String path, List<NameValuePair> params, ResponseHandler<?> response)
+	{
+		return put(path, params, null, null, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E put(String path, List<NameValuePair> params, List<Header> headers, ResponseHandler<?> response)
+	{
+		return put(path, params, null, headers, response);
 	}
 
 	/**
@@ -852,9 +913,9 @@ public class AsyncHttpClient
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public void put(String path, HttpEntity postData, AsyncHttpResponseHandler response)
+	public E put(String path, HttpEntity postData, ResponseHandler<?> response)
 	{
-		put(path, null, postData, null, response);
+		return put(path, null, postData, null, response);
 	}
 
 	/**
@@ -864,9 +925,9 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void put(String path, HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
+	public E put(String path, HttpEntity postData, List<Header> headers, ResponseHandler<?> response)
 	{
-		put(path, null, postData, headers, response);
+		return put(path, null, postData, headers, response);
 	}
 
 	/**
@@ -876,9 +937,9 @@ public class AsyncHttpClient
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public void put(String path, List<NameValuePair> params, HttpEntity postData, AsyncHttpResponseHandler response)
+	public E put(String path, List<NameValuePair> params, HttpEntity postData, ResponseHandler<?> response)
 	{
-		put(path, params, postData, null, response);
+		return put(path, params, postData, null, response);
 	}
 
 	/**
@@ -889,7 +950,7 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void put(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
+	public E put(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, ResponseHandler<?> response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -897,16 +958,25 @@ public class AsyncHttpClient
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		executeTask(RequestMode.PUT, requestUri, headers, postData, response);
+		return executeTask(RequestMode.PUT, requestUri, headers, postData, response);
 	}
 
 	/**
 	 * Performs a PATCH request on the baseUr
 	 * @param response The response handler for the request
 	 */
-	public void patch(AsyncHttpResponseHandler response)
+	public E patch(ResponseHandler<?> response)
 	{
-		patch("", null, null, null, response);
+		return patch("", null, null, null, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUr
+	 * @param path The path extended from the baseUri
+	 */
+	public E patch(String path)
+	{
+		return patch(path, null, null, null, new ByteArrayResponseHandler());
 	}
 
 	/**
@@ -914,9 +984,9 @@ public class AsyncHttpClient
 	 * @param path The path extended from the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void patch(String path, AsyncHttpResponseHandler response)
+	public E patch(String path, ResponseHandler<?> response)
 	{
-		patch(path, null, null, null, response);
+		return patch(path, null, null, null, response);
 	}
 
 	/**
@@ -924,75 +994,75 @@ public class AsyncHttpClient
 	 * @param params The Query params to append to the baseUri
 	 * @param response The response handler for the request
 	 */
-	public void patch(List<NameValuePair> params, AsyncHttpResponseHandler response)
+	public E patch(List<NameValuePair> params, ResponseHandler<?> response)
 	{
-		patch("", params, null, null, response);
+		return patch("", params, null, null, response);
 	}
 
 	/**
 	 * Performs a PATCH request on the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public void patch(List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
-	{
-		patch("", params, null, headers, response);
-	}
-
-	/**
-	 * Performs a PATCH request on the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public void patch(HttpEntity postData, AsyncHttpResponseHandler response)
-	{
-		patch("", null, postData, null, response);
-	}
-
-	/**
-	 * Performs a PATCH request on the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public void patch(HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
-	{
-		patch("", null, postData, headers, response);
-	}
-
-	/**
-	 * Performs a PATCH request on the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public void patch(List<NameValuePair> params, HttpEntity postData, AsyncHttpResponseHandler response)
-	{
-		patch("", params, postData, null, response);
-	}
-
-	/**
-	 * Performs a PATCH request on the baseUri
-	 * @param path The path extended from the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param response The response handler for the request
-	 */
-	public void patch(String path, List<NameValuePair> params, AsyncHttpResponseHandler response)
-	{
-		patch(path, params, null, null, response);
-	}
-
-	/**
-	 * Performs a PATCH request on the baseUri
-	 * @param path The path extended from the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void patch(String path, List<NameValuePair> params, List<Header> headers, AsyncHttpResponseHandler response)
+	public E patch(List<NameValuePair> params, List<Header> headers, ResponseHandler<?> response)
 	{
-		patch(path, params, null, headers, response);
+		return patch("", params, null, headers, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public E patch(HttpEntity postData, ResponseHandler<?> response)
+	{
+		return patch("", null, postData, null, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E patch(HttpEntity postData, List<Header> headers, ResponseHandler<?> response)
+	{
+		return patch("", null, postData, headers, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public E patch(List<NameValuePair> params, HttpEntity postData, ResponseHandler<?> response)
+	{
+		return patch("", params, postData, null, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param response The response handler for the request
+	 */
+	public E patch(String path, List<NameValuePair> params, ResponseHandler<?> response)
+	{
+		return patch(path, params, null, null, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E patch(String path, List<NameValuePair> params, List<Header> headers, ResponseHandler<?> response)
+	{
+		return patch(path, params, null, headers, response);
 	}
 
 	/**
@@ -1001,9 +1071,9 @@ public class AsyncHttpClient
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public void patch(String path, HttpEntity postData, AsyncHttpResponseHandler response)
+	public E patch(String path, HttpEntity postData, ResponseHandler<?> response)
 	{
-		patch(path, null, postData, null, response);
+		return patch(path, null, postData, null, response);
 	}
 
 	/**
@@ -1013,9 +1083,9 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void patch(String path, HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
+	public E patch(String path, HttpEntity postData, List<Header> headers, ResponseHandler<?> response)
 	{
-		patch(path, null, postData, headers, response);
+		return patch(path, null, postData, headers, response);
 	}
 
 	/**
@@ -1025,9 +1095,9 @@ public class AsyncHttpClient
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public void patch(String path, List<NameValuePair> params, HttpEntity postData, AsyncHttpResponseHandler response)
+	public E patch(String path, List<NameValuePair> params, HttpEntity postData, ResponseHandler<?> response)
 	{
-		patch(path, params, postData, null, response);
+		return patch(path, params, postData, null, response);
 	}
 
 	/**
@@ -1038,7 +1108,7 @@ public class AsyncHttpClient
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public void patch(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, AsyncHttpResponseHandler response)
+	public E patch(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, ResponseHandler<?> response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -1046,65 +1116,84 @@ public class AsyncHttpClient
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		executeTask(RequestMode.PATCH, requestUri, headers, postData, response);
+		return executeTask(RequestMode.PATCH, requestUri, headers, postData, response);
 	}
 
-	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-	private void executeTask(RequestMode mode, Uri uri, List<Header> headers, HttpEntity sendData, AsyncHttpResponseHandler response)
+	private E executeTask(RequestMode mode, Uri uri, List<Header> headers, HttpEntity sendData, ResponseHandler<?> requestProcessor)
 	{
-		if (executorTask != null || (executorTask != null && (executorTask.getStatus() == Status.RUNNING || executorTask.getStatus() == Status.PENDING)))
-		{
-			executorTask.cancel(true);
-			executorTask = null;
-		}
+		executor = new ClientExecutorTask<E>(mode, uri, headers, sendData, requestProcessor);
+		executor.onPreExecute();
+		E response = executor.execute();
+		executor.onPostExecute();
 
-		executorTask = new ClientExecutorTask(mode, uri, headers, sendData, response, allowRedirect);
-
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
-		{
-			executorTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-		}
-		else
-		{
-			executorTask.execute();
-		}
+		return response;
 	}
 
-	public class ClientExecutorTask extends AsyncTask<Void, Packet, Void>
+	/**
+	 * Sets whether to allow all ssl, trusted or not
+	 * @param allow
+	 */
+	public void setAllowAllSsl(boolean allow)
+	{
+		this.allowAllSsl = allow;
+	}
+
+	/**
+	 * Gets the connection info <b>after</b> a connection request has been made
+	 * @return The connection info, or null
+	 */
+	public ConnectionInfo getConnectionInfo()
+	{
+		if (executor != null && executor.response != null)
+		{
+			return executor.response.getConnectionInfo();
+		}
+
+		return null;
+	}
+
+	private class ClientExecutorTask<F>
 	{
 		private static final int BUFFER_SIZE = 1 * 1024 * 8;
 
-		private final AsyncHttpResponseHandler response;
+		private final ResponseHandler<?> response;
 		private final Uri requestUri;
 		private final List<Header> requestHeaders;
 		private final HttpEntity postData;
 		private final RequestMode requestMode;
-		private boolean allowRedirect = true;
+		private volatile boolean cancelled = false;
 
-		public ClientExecutorTask(RequestMode mode, Uri request, List<Header> headers, HttpEntity postData, AsyncHttpResponseHandler response, boolean allowRedirect)
+		public ClientExecutorTask(RequestMode mode, Uri request, List<Header> headers, HttpEntity postData, ResponseHandler<?> response)
 		{
 			this.response = response;
 			this.requestUri = request;
 			this.requestHeaders = headers;
 			this.postData = postData;
 			this.requestMode = mode;
-			this.allowRedirect = allowRedirect;
 		}
 
-		@Override protected void onPreExecute()
+		public boolean isCancelled()
 		{
-			super.onPreExecute();
+			return cancelled;
+		}
+
+		public void cancel()
+		{
+			cancelled = true;
+		}
+
+		public void onPreExecute()
+		{
 			if (this.response != null)
 			{
-				this.response.getConnectionInfo().connectionUrl = requestUri.toString();
 				this.response.getConnectionInfo().connectionTime = System.currentTimeMillis();
 				this.response.getConnectionInfo().requestMethod = requestMode;
-				this.response.getConnectionInfo().requestHeaders = requestHeaders;
 				this.response.onSend();
 			}
 		}
 
-		@Override protected Void doInBackground(Void... params)
+		@SuppressWarnings("unchecked")
+		public F execute()
 		{
 			HttpClient httpClient;
 
@@ -1133,6 +1222,11 @@ public class AsyncHttpClient
 
 			try
 			{
+				if (this.response != null)
+				{
+					this.response.getConnectionInfo().connectionUrl = requestUri.toString();
+				}
+
 				System.setProperty("http.keepAlive", "false");
 
 				if (requestMode == RequestMode.GET)
@@ -1165,21 +1259,21 @@ public class AsyncHttpClient
 				}
 
 				HttpParams p = httpClient.getParams();
-				HttpClientParams.setRedirecting(p, allowRedirect);
 				HttpConnectionParams.setConnectionTimeout(p, (int)requestTimeout);
 				HttpConnectionParams.setSoTimeout(p, (int)requestTimeout);
 				request.setHeader("Connection", "close");
+				request.setHeader("User-Agent", userAgent);
 
 				if (postData != null)
 				{
-					request.addHeader(postData.getContentType().getName(), postData.getContentType().getValue());
+					request.setHeader(postData.getContentType().getName(), postData.getContentType().getValue());
 				}
 
 				if (requestHeaders != null)
 				{
 					for (Header header : requestHeaders)
 					{
-						request.addHeader(header.getName(), header.getValue());
+						request.setHeader(header.getName(), header.getValue());
 					}
 				}
 
@@ -1199,8 +1293,6 @@ public class AsyncHttpClient
 							{
 								response.onPublishedUploadProgress(buffer, len, contentLength);
 								response.onPublishedUploadProgress(buffer, len, transferred, contentLength);
-
-								publishProgress(new Packet(transferred, contentLength, false));
 							}
 						}
 					}));
@@ -1210,29 +1302,19 @@ public class AsyncHttpClient
 				HttpResponse response = httpClient.execute(request, httpContext);
 				int responseCode = response.getStatusLine().getStatusCode();
 
-				if (response.getAllHeaders() != null && this.response != null)
-				{
-					this.response.getConnectionInfo().responseHeaders = new LinkedHashMap<String, String>();
-					for (Header header : response.getAllHeaders())
-					{
-						this.response.getConnectionInfo().responseHeaders.put(header.getName(), header.getValue());
-					}
-				}
-
 				if (response.getEntity() != null)
 				{
 					String encoding = response.getEntity().getContentEncoding() == null ? "" : response.getEntity().getContentEncoding().getValue();
 					long contentLength = response.getEntity().getContentLength();
-					InputStream responseStream;
-					InputStream stream = response.getEntity().getContent();
+					InputStream i = response.getEntity().getContent();
 
 					if ("gzip".equals(encoding))
 					{
-						responseStream = new GZIPInputStream(new BufferedInputStream(stream, BUFFER_SIZE));
+						i = new GZIPInputStream(new BufferedInputStream(i, BUFFER_SIZE));
 					}
 					else
 					{
-						responseStream = new BufferedInputStream(stream, BUFFER_SIZE);
+						i = new BufferedInputStream(i, BUFFER_SIZE);
 					}
 
 					if (this.response != null && !isCancelled())
@@ -1242,10 +1324,33 @@ public class AsyncHttpClient
 
 					try
 					{
-						if (this.response != null && contentLength != 0 && !isCancelled())
+						if (contentLength != 0)
 						{
-							this.response.onBeginPublishedDownloadProgress(responseStream, this, contentLength);
-							this.response.generateContent();
+							byte[] buffer = new byte[BUFFER_SIZE];
+
+							int len = 0;
+							int readCount = 0;
+							while ((len = i.read(buffer)) > -1 && !isCancelled())
+							{
+								if (this.response != null)
+								{
+									this.response.onPublishedDownloadProgress(buffer, len, contentLength);
+									this.response.onPublishedDownloadProgress(buffer, len, readCount, contentLength);
+								}
+
+								readCount += len;
+							}
+
+							if (this.response != null && !isCancelled())
+							{
+								this.response.getConnectionInfo().responseLength = readCount;
+
+								// we fake the content length, because it can be -1
+								this.response.onPublishedDownloadProgress(null, readCount, readCount);
+								this.response.onPublishedDownloadProgress(null, readCount, readCount, readCount);
+							}
+
+							i.close();
 						}
 					}
 					catch (SocketTimeoutException timeout)
@@ -1256,14 +1361,11 @@ public class AsyncHttpClient
 					{
 						e.printStackTrace();
 					}
-					finally
-					{
-						responseStream.close();
-					}
 				}
 
 				if (this.response != null && !isCancelled())
 				{
+					this.response.getConnectionInfo().responseTime = System.currentTimeMillis();
 					this.response.getConnectionInfo().responseCode = responseCode;
 				}
 			}
@@ -1274,64 +1376,14 @@ public class AsyncHttpClient
 
 			if (this.response != null && !isCancelled())
 			{
-				this.response.getConnectionInfo().responseTime = System.currentTimeMillis();
-
-				if (this.response.getConnectionInfo().responseCode < 400 && this.response.getConnectionInfo().responseCode > 100)
-				{
-					this.response.onSuccess();
-				}
-				else
-				{
-					this.response.onFailure();
-				}
+				return (F)this.response.getContent();
 			}
 
 			return null;
 		}
 
-		@Override protected void onProgressUpdate(Packet... values)
+		public void onPostExecute()
 		{
-			super.onProgressUpdate(values);
-
-			if (this.response != null && !isCancelled())
-			{
-				if (values[0].isDownload)
-				{
-					this.response.onPublishedDownloadProgressUI(values[0].length, values[0].total);
-				}
-				else
-				{
-					this.response.onPublishedUploadProgressUI(values[0].length, values[0].total);
-				}
-			}
 		}
-
-		@Override protected void onPostExecute(Void result)
-		{
-			super.onPostExecute(result);
-
-			if (this.response != null && !isCancelled())
-			{
-				this.response.beforeCallback();
-				this.response.beforeFinish();
-				this.response.onFinish();
-				this.response.onFinish(this.response.getConnectionInfo().responseCode >= 400 || this.response.getConnectionInfo().responseCode == 0);
-			}
-		}
-
-		public void postPublishProgress(Packet... values)
-		{
-			publishProgress(values);
-		}
-	}
-
-	public void setAllowAllSsl(boolean allow)
-	{
-		this.allowAllSsl = allow;
-	}
-
-	public void setAllowRedirect(boolean allow)
-	{
-		this.allowRedirect = allow;
 	}
 }

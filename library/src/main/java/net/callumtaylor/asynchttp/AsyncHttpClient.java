@@ -1,7 +1,10 @@
 package net.callumtaylor.asynchttp;
 
+import android.annotation.TargetApi;
 import android.net.Uri;
-import android.os.NetworkOnMainThreadException;
+import android.os.AsyncTask;
+import android.os.AsyncTask.Status;
+import android.os.Build;
 import android.text.TextUtils;
 
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
@@ -14,15 +17,14 @@ import net.callumtaylor.asynchttp.obj.RequestMode;
 import net.callumtaylor.asynchttp.obj.RequestUtil;
 import net.callumtaylor.asynchttp.obj.entity.ProgressEntityWrapper;
 import net.callumtaylor.asynchttp.obj.entity.ProgressEntityWrapper.ProgressListener;
-import net.callumtaylor.asynchttp.processor.ByteArrayProcessor;
-import net.callumtaylor.asynchttp.processor.Processor;
+import net.callumtaylor.asynchttp.response.ResponseHandler;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.*;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
@@ -30,6 +32,7 @@ import org.apache.http.client.methods.HttpOptions;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.params.HttpClientParams;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.params.ConnManagerPNames;
 import org.apache.http.conn.params.ConnPerRouteBean;
@@ -48,23 +51,26 @@ import org.apache.http.protocol.HttpContext;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 /**
  * @mainpage
  *
- * This class is a synchronous class which runs on any thread that the code was created
- * on. This will throw a {@link NetworkOnMainThreadException} if ran on the UI thread.
+ * The client class used for initiating HTTP requests using an AsyncTask. It
+ * follows a RESTful paradigm for the connections with the 4 possible methods,
+ * GET, POST, PUT and DELETE.
  *
- * <b>Note:</b> Because of the way SyncHttpClient works, only one instance can be created
- * at a time. If one client makes 2 requests, the first request is canceled for the new
- * request. You can either wait for the first to finish before making the second, or you
- * can create two seperate instances.
+ * <b>Note:</b> Because AsyncHttpClient uses
+ * AsyncTask, only one instance can be created at a time. If one client makes 2
+ * requests, the first request is canceled for the new request. You can either
+ * wait for the first to finish before making the second, or you can create two
+ * seperate instances.
  *
  * <b>Depends on</b>
  * <ul>
- * <li>{@link Processor}</li>
+ * <li>{@link net.callumtaylor.asynchttp.response.ResponseHandler}</li>
  * <li>{@link HttpEntity}</li>
  * <li>{@link NameValuePair}</li>
  * <li>{@link ConnectionInfo}</li>
@@ -75,38 +81,46 @@ import java.util.zip.GZIPInputStream;
  * </ul>
  * <h1>Example GET</h1>
  *
- * SyncHttpClient is a paramitized class which means the type you infer to it, is the type
- * that gets returned when calling the method. When supplying a {@link Processor}, that
- * processor must also paramitized with the same type as the SyncHttpClient instance.
- *
  * <pre>
- * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
+ * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
  * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
  * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
  *
  * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
  * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
  *
- * JsonElement response = client.get(&quot;api/v1/&quot;, params, headers, new JsonProcessor());
+ * client.get(&quot;api/v1/&quot;, params, headers, new JsonResponseHandler()
+ * {
+ * 	&#064;Override public void onSuccess()
+ * 	{
+ * 		JsonElement result = getContent();
+ * 	}
+ * });
  * </pre>
  *
  * <h1>Example DELETE</h1>
  *
  * <pre>
- * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
+ * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
  * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
  * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
  *
  * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
  * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
  *
- * JsonElement response = client.delete(&quot;api/v1/&quot;, params, headers, new JsonProcessor());
+ * client.delete(&quot;api/v1/&quot;, params, headers, new JsonResponseHandler()
+ * {
+ * 	&#064;Override public void onSuccess()
+ * 	{
+ * 		JsonElement result = getContent();
+ * 	}
+ * });
  * </pre>
  *
  * <h1>Example POST - Single Entity</h1>
  *
  * <pre>
- * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
+ * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
  * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
  * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
  *
@@ -116,13 +130,19 @@ import java.util.zip.GZIPInputStream;
  * JsonEntity data = new JsonEntity(&quot;{\&quot;key\&quot;:\&quot;value\&quot;}&quot;);
  * GzippedEntity entity = new GzippedEntity(data);
  *
- * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonProcessor());
+ * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
+ * {
+ * 	&#064;Override public void onSuccess()
+ * 	{
+ * 		JsonElement result = getContent();
+ * 	}
+ * });
  * </pre>
  *
  * <h1>Example POST - Multiple Entity + file</h1>
  *
  * <pre>
- * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
+ * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
  * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
  * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
  *
@@ -135,13 +155,19 @@ import java.util.zip.GZIPInputStream;
  * entity.addFilePart(&quot;image1.jpg&quot;, data1);
  * entity.addPart(&quot;content1&quot;, data2);
  *
- * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonProcessor());
+ * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
+ * {
+ * 	&#064;Override public void onSuccess()
+ * 	{
+ * 		JsonElement result = getContent();
+ * 	}
+ * });
  * </pre>
  *
  * <h1>Example PUT</h1>
  *
  * <pre>
- * SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>(&quot;http://example.com&quot;);
+ * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
  * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
  * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
  *
@@ -151,55 +177,11 @@ import java.util.zip.GZIPInputStream;
  * JsonEntity data = new JsonEntity(&quot;{\&quot;key\&quot;:\&quot;value\&quot;}&quot;);
  * GzippedEntity entity = new GzippedEntity(data);
  *
- * JsonElement response = client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonProcessor());
- * </pre>
- *
- * <h1>Example custom processor</h1>
- *
- * <pre>
- * SyncHttpClient<String> client = new SyncHttpClient<String>(&quot;http://example.com&quot;);
- * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
- * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
- *
- * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
- * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
- *
- * String encodedResponse = client.get(&quot;api/v1/&quot;, params, headers, new Processor()
+ * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
  * {
- * 	private StringBuffer stringBuffer;
- *
- * 	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+ * 	&#064;Override public void onSuccess()
  * 	{
- *  	if (stringBuffer == null)
- *  	{
- * 			int total = (int)(totalLength > Integer.MAX_VALUE ? Integer.MAX_VALUE : totalLength);
- * 			stringBuffer = new StringBuffer(Math.max(8192, total));
- * 		}
- *
- * 		if (chunk != null)
- *		{
- * 			try
- * 			{
- *				// Shift all the bytes right
- * 				byte tmp = chunk[chunk.length - 1];
- *				for (int index = chunk.length - 2; index >= 0; index--)
- *				{
- *					chunk[index + 1] = chunk[index];
- *				}
- *
- *				chunk[0] = tmp;
- * 				stringBuffer.append(new String(chunk, 0, chunkLength, "UTF-8").);
- * 			}
- * 			catch (Exception e)
- * 			{
- * 				e.printStackTrace();
- * 			}
- *  	}
- * 	}
- *
- * 	@Override public String getContent()
- * 	{
- *  	return stringBuffer.toString();
+ * 		JsonElement result = getContent();
  * 	}
  * });
  * </pre>
@@ -209,18 +191,24 @@ import java.util.zip.GZIPInputStream;
  *
  * @author Callum Taylor &lt;callumtaylor.net&gt; &#064;scruffyfox
  */
-public class SyncHttpClient<E>
+public class AsyncHttpClient
 {
+	/**
+	 * User agent to send with every request. Defaults to {@link RequestUtil#getDefaultUserAgent()}
+	 */
+	public static String userAgent = RequestUtil.getDefaultUserAgent();
+
+	private ClientExecutorTask executorTask;
 	private Uri requestUri;
 	private long requestTimeout = 0L;
 	private boolean allowAllSsl = false;
-	private ClientExecutorTask<E> executor;
+	private boolean allowRedirect = true;
 
 	/**
 	 * Creates a new client using a base Url without a timeout
 	 * @param baseUrl The base connection url
 	 */
-	public SyncHttpClient(String baseUrl)
+	public AsyncHttpClient(String baseUrl)
 	{
 		this(baseUrl, 0);
 	}
@@ -229,7 +217,7 @@ public class SyncHttpClient<E>
 	 * Creates a new client using a base Uri without a timeout
 	 * @param baseUri The base connection uri
 	 */
-	public SyncHttpClient(Uri baseUri)
+	public AsyncHttpClient(Uri baseUri)
 	{
 		this(baseUri, 0);
 	}
@@ -239,7 +227,7 @@ public class SyncHttpClient<E>
 	 * @param baseUrl The base connection url
 	 * @param timeout The timeout in MS
 	 */
-	public SyncHttpClient(String baseUrl, long timeout)
+	public AsyncHttpClient(String baseUrl, long timeout)
 	{
 		this(Uri.parse(baseUrl), timeout);
 	}
@@ -249,20 +237,20 @@ public class SyncHttpClient<E>
 	 * @param baseUri The base connection uri
 	 * @param timeout The timeout in MS
 	 */
-	public SyncHttpClient(Uri baseUri, long timeout)
+	public AsyncHttpClient(Uri baseUri, long timeout)
 	{
 		requestUri = baseUri;
 		requestTimeout = timeout;
 	}
 
 	/**
-	 * Cancells the current executor task
+	 * Cancels a request if it's running
 	 */
 	public void cancel()
 	{
-		if (executor != null)
+		if (executorTask != null && executorTask.getStatus() == Status.RUNNING)
 		{
-			executor.cancel();
+			executorTask.cancel(true);
 		}
 	}
 
@@ -270,18 +258,9 @@ public class SyncHttpClient<E>
 	 * Performs a GET request on the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E get(Processor<?> response)
+	public void get(ResponseHandler response)
 	{
-		return get("", null, null, response);
-	}
-
-	/**
-	 * Performs a GET request on the baseUri
-	 * @param path The path extended from the baseUri
-	 */
-	public E get(String path)
-	{
-		return get(path, null, null, new ByteArrayProcessor());
+		get("", null, null, response);
 	}
 
 	/**
@@ -289,9 +268,9 @@ public class SyncHttpClient<E>
 	 * @param path The path extended from the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E get(String path, Processor<?> response)
+	public void get(String path, ResponseHandler response)
 	{
-		return get(path, null, null, response);
+		get(path, null, null, response);
 	}
 
 	/**
@@ -299,9 +278,9 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E get(List<Header> headers, Processor<?> response)
+	public void get(List<Header> headers, ResponseHandler response)
 	{
-		return get("", null, headers, response);
+		get("", null, headers, response);
 	}
 
 	/**
@@ -310,20 +289,19 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E get(List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	public void get(List<NameValuePair> params, List<Header> headers, ResponseHandler response)
 	{
-		return get("", params, headers, response);
+		get("", params, headers, response);
 	}
 
 	/**
 	 * Performs a GET request on the baseUri
 	 * @param path The path extended from the baseUri
-	 * @param params The request params for the connection
 	 * @param response The response handler for the request
 	 */
-	public E get(String path, List<NameValuePair> params, Processor<?> response)
+	public void get(String path, List<NameValuePair> params, ResponseHandler response)
 	{
-		return get(path, params, null, response);
+		get(path, params, null, response);
 	}
 
 	/**
@@ -333,7 +311,7 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E get(String path, List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	public void get(String path, List<NameValuePair> params, List<Header> headers, ResponseHandler response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -341,25 +319,16 @@ public class SyncHttpClient<E>
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		return executeTask(RequestMode.GET, requestUri, headers, null, response);
+		executeTask(RequestMode.GET, requestUri, headers, null, response);
 	}
 
 	/**
 	 * Performs a OPTIONS request on the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E options(Processor<?> response)
+	public void options(ResponseHandler response)
 	{
-		return options("", null, null, response);
-	}
-
-	/**
-	 * Performs a OPTIONS request on the baseUri
-	 * @param path The path extended from the baseUri
-	 */
-	public E options(String path)
-	{
-		return options(path, null, null, new ByteArrayProcessor());
+		options("", null, null, response);
 	}
 
 	/**
@@ -367,9 +336,9 @@ public class SyncHttpClient<E>
 	 * @param path The path extended from the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E options(String path, Processor<?> response)
+	public void options(String path, ResponseHandler response)
 	{
-		return options(path, null, null, response);
+		options(path, null, null, response);
 	}
 
 	/**
@@ -377,9 +346,9 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E options(List<Header> headers, Processor<?> response)
+	public void options(List<Header> headers, ResponseHandler response)
 	{
-		return options("", null, headers, response);
+		options("", null, headers, response);
 	}
 
 	/**
@@ -388,20 +357,19 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E options(List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	public void options(List<NameValuePair> params, List<Header> headers, ResponseHandler response)
 	{
-		return options("", params, headers, response);
+		options("", params, headers, response);
 	}
 
 	/**
 	 * Performs a OPTIONS request on the baseUri
 	 * @param path The path extended from the baseUri
-	 * @param params The request params for the connection
 	 * @param response The response handler for the request
 	 */
-	public E options(String path, List<NameValuePair> params, Processor<?> response)
+	public void options(String path, List<NameValuePair> params, ResponseHandler response)
 	{
-		return options(path, params, null, response);
+		options(path, params, null, response);
 	}
 
 	/**
@@ -411,7 +379,7 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E options(String path, List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	public void options(String path, List<NameValuePair> params, List<Header> headers, ResponseHandler response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -419,25 +387,16 @@ public class SyncHttpClient<E>
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		return executeTask(RequestMode.OPTIONS, requestUri, headers, null, response);
+		executeTask(RequestMode.OPTIONS, requestUri, headers, null, response);
 	}
 
 	/**
 	 * Performs a HEAD request on the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E head(Processor<?> response)
+	public void head(ResponseHandler response)
 	{
-		return head("", null, null, response);
-	}
-
-	/**
-	 * Performs a HEAD request on the baseUri
-	 * @param path The path extended from the baseUri
-	 */
-	public E head(String path)
-	{
-		return head(path, null, null, new ByteArrayProcessor());
+		head("", null, null, response);
 	}
 
 	/**
@@ -445,9 +404,9 @@ public class SyncHttpClient<E>
 	 * @param path The path extended from the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E head(String path, Processor<?> response)
+	public void head(String path, ResponseHandler response)
 	{
-		return head(path, null, null, response);
+		head(path, null, null, response);
 	}
 
 	/**
@@ -455,9 +414,9 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E head(List<Header> headers, Processor<?> response)
+	public void head(List<Header> headers, ResponseHandler response)
 	{
-		return head("", null, headers, response);
+		head("", null, headers, response);
 	}
 
 	/**
@@ -466,20 +425,19 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E head(List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	public void head(List<NameValuePair> params, List<Header> headers, ResponseHandler response)
 	{
-		return head("", params, headers, response);
+		head("", params, headers, response);
 	}
 
 	/**
 	 * Performs a HEAD request on the baseUri
 	 * @param path The path extended from the baseUri
-	 * @param params The request params for the connection
 	 * @param response The response handler for the request
 	 */
-	public E head(String path, List<NameValuePair> params, Processor<?> response)
+	public void head(String path, List<NameValuePair> params, ResponseHandler response)
 	{
-		return head(path, params, null, response);
+		head(path, params, null, response);
 	}
 
 	/**
@@ -489,7 +447,7 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E head(String path, List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	public void head(String path, List<NameValuePair> params, List<Header> headers, ResponseHandler response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -497,25 +455,16 @@ public class SyncHttpClient<E>
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		return executeTask(RequestMode.HEAD, requestUri, headers, null, response);
+		executeTask(RequestMode.HEAD, requestUri, headers, null, response);
 	}
 
 	/**
 	 * Performs a DELETE request on the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E delete(Processor<?> response)
+	public void delete(ResponseHandler response)
 	{
-		return delete("", null, null, null, response);
-	}
-
-	/**
-	 * Performs a DELETE request on the baseUri
-	 * @param path The path extended from the baseUri
-	 */
-	public E delete(String path)
-	{
-		return delete(path, null, null, null, new ByteArrayProcessor());
+		delete("", null, null, null, response);
 	}
 
 	/**
@@ -523,19 +472,19 @@ public class SyncHttpClient<E>
 	 * @param path The path extended from the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E delete(String path, Processor<?> response)
+	public void delete(String path, ResponseHandler response)
 	{
-		return delete(path, null, null, null, response);
+		delete(path, null, null, null, response);
 	}
 
 	/**
 	 * Performs a DELETE request on the baseUri
-	 * @param headers The request headers for the connection
+	 * @param params The Query params to append to the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E delete(List<Header> headers, Processor<?> response)
+	public void delete(List<NameValuePair> params, ResponseHandler response)
 	{
-		return delete("", null, null, headers, response);
+		delete("", params, null, null, response);
 	}
 
 	/**
@@ -544,20 +493,52 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E delete(List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	public void delete(List<NameValuePair> params, List<Header> headers, ResponseHandler response)
 	{
-		return delete("", params, headers, response);
+		delete("", params, null, headers, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public void delete(HttpEntity postData, ResponseHandler response)
+	{
+		delete("", null, postData, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void delete(HttpEntity postData, List<Header> headers, ResponseHandler response)
+	{
+		delete("", null, postData, headers, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public void delete(List<NameValuePair> params, HttpEntity postData, ResponseHandler response)
+	{
+		delete("", params, postData, null, response);
 	}
 
 	/**
 	 * Performs a DELETE request on the baseUri
 	 * @param path The path extended from the baseUri
-	 * @param params The request params for the connection
+	 * @param params The Query params to append to the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E delete(String path, List<NameValuePair> params, Processor<?> response)
+	public void delete(String path, List<NameValuePair> params, ResponseHandler response)
 	{
-		return delete(path, params, null, null, response);
+		delete(path, params, null, null, response);
 	}
 
 	/**
@@ -567,7 +548,55 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E delete(String path, List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	public void delete(String path, List<NameValuePair> params, List<Header> headers, ResponseHandler response)
+	{
+		delete(path, params, null, headers, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public void delete(String path, HttpEntity postData, ResponseHandler response)
+	{
+		delete(path, null, postData, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void delete(String path, HttpEntity postData, List<Header> headers, ResponseHandler response)
+	{
+		delete(path, null, postData, headers, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public void delete(String path, List<NameValuePair> params, HttpEntity postData, ResponseHandler response)
+	{
+		delete(path, params, postData, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void delete(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, ResponseHandler response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -575,90 +604,16 @@ public class SyncHttpClient<E>
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		return executeTask(RequestMode.DELETE, requestUri, headers, null, response);
-	}
-
-	/**
-	 * Performs a DELETE request on the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param deleteData The delete data entity to delete to the server
-	 * @param response The response handler for the request
-	 */
-	public E delete(List<NameValuePair> params, HttpEntity deleteData, Processor<?> response)
-	{
-		return delete("", params, deleteData, null, response);
-	}
-
-	/**
-	 * Performs a DELETE request on the baseUri
-	 * @param path The path extended from the baseUri
-	 * @param deleteData The delete data entity to delete to the server
-	 * @param response The response handler for the request
-	 */
-	public E delete(String path, HttpEntity deleteData, Processor<?> response)
-	{
-		return delete(path, null, deleteData, null, response);
-	}
-
-	/**
-	 * Performs a DELETE request on the baseUri
-	 * @param path The path extended from the baseUri
-	 * @param deleteData The delete data entity to delete to the server
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public E delete(String path, HttpEntity deleteData, List<Header> headers, Processor<?> response)
-	{
-		return delete(path, null, deleteData, headers, response);
-	}
-
-	/**
-	 * Performs a DELETE request on the baseUri
-	 * @param path The path extended from the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param deleteData The delete data entity to delete to the server
-	 * @param response The response handler for the request
-	 */
-	public E delete(String path, List<NameValuePair> params, HttpEntity deleteData, Processor<?> response)
-	{
-		return delete(path, params, deleteData, null, response);
-	}
-
-	/**
-	 * Performs a DELETE request on the baseUri
-	 * @param path The path extended from the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param deleteData The delete data entity to delete to the server
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public E delete(String path, List<NameValuePair> params, HttpEntity deleteData, List<Header> headers, Processor<?> response)
-	{
-		if (!TextUtils.isEmpty(path))
-		{
-			requestUri = Uri.withAppendedPath(requestUri, path);
-		}
-
-		requestUri = RequestUtil.appendParams(requestUri, params);
-		return executeTask(RequestMode.DELETE, requestUri, headers, deleteData, response);
+		executeTask(RequestMode.DELETE, requestUri, headers, postData, response);
 	}
 
 	/**
 	 * Performs a POST request on the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E post(Processor<?> response)
+	public void post(ResponseHandler response)
 	{
-		return post("", null, null, null, response);
-	}
-
-	/**
-	 * Performs a POST request on the baseUr
-	 * @param path The path extended from the baseUri
-	 */
-	public E post(String path)
-	{
-		return post(path, null, null, null, new ByteArrayProcessor());
+		post("", null, null, null, response);
 	}
 
 	/**
@@ -666,9 +621,9 @@ public class SyncHttpClient<E>
 	 * @param path The path extended from the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E post(String path, Processor<?> response)
+	public void post(String path, ResponseHandler response)
 	{
-		return post(path, null, null, null, response);
+		post(path, null, null, null, response);
 	}
 
 	/**
@@ -676,75 +631,75 @@ public class SyncHttpClient<E>
 	 * @param params The Query params to append to the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E post(List<NameValuePair> params, Processor<?> response)
+	public void post(List<NameValuePair> params, ResponseHandler response)
 	{
-		return post("", params, null, null, response);
+		post("", params, null, null, response);
 	}
 
 	/**
 	 * Performs a POST request on the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public E post(List<NameValuePair> params, List<Header> headers, Processor<?> response)
-	{
-		return post("", params, null, headers, response);
-	}
-
-	/**
-	 * Performs a POST request on the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public E post(HttpEntity postData, Processor<?> response)
-	{
-		return post("", null, postData, null, response);
-	}
-
-	/**
-	 * Performs a POST request on the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public E post(HttpEntity postData, List<Header> headers, Processor<?> response)
-	{
-		return post("", null, postData, headers, response);
-	}
-
-	/**
-	 * Performs a POST request on the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public E post(List<NameValuePair> params, HttpEntity postData, Processor<?> response)
-	{
-		return post("", params, postData, null, response);
-	}
-
-	/**
-	 * Performs a POST request on the baseUri
-	 * @param path The path extended from the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param response The response handler for the request
-	 */
-	public E post(String path, List<NameValuePair> params, Processor<?> response)
-	{
-		return post(path, params, null, null, response);
-	}
-
-	/**
-	 * Performs a POST request on the baseUri
-	 * @param path The path extended from the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E post(String path, List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	public void post(List<NameValuePair> params, List<Header> headers, ResponseHandler response)
 	{
-		return post(path, params, null, headers, response);
+		post("", params, null, headers, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public void post(HttpEntity postData, ResponseHandler response)
+	{
+		post("", null, postData, null, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void post(HttpEntity postData, List<Header> headers, ResponseHandler response)
+	{
+		post("", null, postData, headers, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public void post(List<NameValuePair> params, HttpEntity postData, ResponseHandler response)
+	{
+		post("", params, postData, null, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param response The response handler for the request
+	 */
+	public void post(String path, List<NameValuePair> params, ResponseHandler response)
+	{
+		post(path, params, null, null, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void post(String path, List<NameValuePair> params, List<Header> headers, ResponseHandler response)
+	{
+		post(path, params, null, headers, response);
 	}
 
 	/**
@@ -753,9 +708,9 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E post(String path, HttpEntity postData, Processor<?> response)
+	public void post(String path, HttpEntity postData, ResponseHandler response)
 	{
-		return post(path, null, postData, null, response);
+		post(path, null, postData, null, response);
 	}
 
 	/**
@@ -765,9 +720,9 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E post(String path, HttpEntity postData, List<Header> headers, Processor<?> response)
+	public void post(String path, HttpEntity postData, List<Header> headers, ResponseHandler response)
 	{
-		return post(path, null, postData, headers, response);
+		post(path, null, postData, headers, response);
 	}
 
 	/**
@@ -777,9 +732,9 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E post(String path, List<NameValuePair> params, HttpEntity postData, Processor<?> response)
+	public void post(String path, List<NameValuePair> params, HttpEntity postData, ResponseHandler response)
 	{
-		return post(path, params, postData, null, response);
+		post(path, params, postData, null, response);
 	}
 
 	/**
@@ -790,7 +745,7 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E post(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, Processor<?> response)
+	public void post(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, ResponseHandler response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -798,25 +753,16 @@ public class SyncHttpClient<E>
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		return executeTask(RequestMode.POST, requestUri, headers, postData, response);
+		executeTask(RequestMode.POST, requestUri, headers, postData, response);
 	}
 
 	/**
 	 * Performs a PUT request on the baseUr
 	 * @param response The response handler for the request
 	 */
-	public E put(Processor<?> response)
+	public void put(ResponseHandler response)
 	{
-		return put("", null, null, null, response);
-	}
-
-	/**
-	 * Performs a PUT request on the baseUr
-	 * @param path The path extended from the baseUri
-	 */
-	public E put(String path)
-	{
-		return put(path, null, null, null, new ByteArrayProcessor());
+		put("", null, null, null, response);
 	}
 
 	/**
@@ -824,9 +770,9 @@ public class SyncHttpClient<E>
 	 * @param path The path extended from the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E put(String path, Processor<?> response)
+	public void put(String path, ResponseHandler response)
 	{
-		return put(path, null, null, null, response);
+		put(path, null, null, null, response);
 	}
 
 	/**
@@ -834,75 +780,75 @@ public class SyncHttpClient<E>
 	 * @param params The Query params to append to the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E put(List<NameValuePair> params, Processor<?> response)
+	public void put(List<NameValuePair> params, ResponseHandler response)
 	{
-		return put("", params, null, null, response);
+		put("", params, null, null, response);
 	}
 
 	/**
 	 * Performs a PUT request on the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public E put(List<NameValuePair> params, List<Header> headers, Processor<?> response)
-	{
-		return put("", params, null, headers, response);
-	}
-
-	/**
-	 * Performs a PUT request on the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public E put(HttpEntity postData, Processor<?> response)
-	{
-		return put("", null, postData, null, response);
-	}
-
-	/**
-	 * Performs a PUT request on the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public E put(HttpEntity postData, List<Header> headers, Processor<?> response)
-	{
-		return put("", null, postData, headers, response);
-	}
-
-	/**
-	 * Performs a PUT request on the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public E put(List<NameValuePair> params, HttpEntity postData, Processor<?> response)
-	{
-		return put("", params, postData, null, response);
-	}
-
-	/**
-	 * Performs a PUT request on the baseUri
-	 * @param path The path extended from the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param response The response handler for the request
-	 */
-	public E put(String path, List<NameValuePair> params, Processor<?> response)
-	{
-		return put(path, params, null, null, response);
-	}
-
-	/**
-	 * Performs a PUT request on the baseUri
-	 * @param path The path extended from the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E put(String path, List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	public void put(List<NameValuePair> params, List<Header> headers, ResponseHandler response)
 	{
-		return put(path, params, null, headers, response);
+		put("", params, null, headers, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public void put(HttpEntity postData, ResponseHandler response)
+	{
+		put("", null, postData, null, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void put(HttpEntity postData, List<Header> headers, ResponseHandler response)
+	{
+		put("", null, postData, headers, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public void put(List<NameValuePair> params, HttpEntity postData, ResponseHandler response)
+	{
+		put("", params, postData, null, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param response The response handler for the request
+	 */
+	public void put(String path, List<NameValuePair> params, ResponseHandler response)
+	{
+		put(path, params, null, null, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void put(String path, List<NameValuePair> params, List<Header> headers, ResponseHandler response)
+	{
+		put(path, params, null, headers, response);
 	}
 
 	/**
@@ -911,9 +857,9 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E put(String path, HttpEntity postData, Processor<?> response)
+	public void put(String path, HttpEntity postData, ResponseHandler response)
 	{
-		return put(path, null, postData, null, response);
+		put(path, null, postData, null, response);
 	}
 
 	/**
@@ -923,9 +869,9 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E put(String path, HttpEntity postData, List<Header> headers, Processor<?> response)
+	public void put(String path, HttpEntity postData, List<Header> headers, ResponseHandler response)
 	{
-		return put(path, null, postData, headers, response);
+		put(path, null, postData, headers, response);
 	}
 
 	/**
@@ -935,9 +881,9 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E put(String path, List<NameValuePair> params, HttpEntity postData, Processor<?> response)
+	public void put(String path, List<NameValuePair> params, HttpEntity postData, ResponseHandler response)
 	{
-		return put(path, params, postData, null, response);
+		put(path, params, postData, null, response);
 	}
 
 	/**
@@ -948,7 +894,7 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E put(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, Processor<?> response)
+	public void put(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, ResponseHandler response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -956,25 +902,16 @@ public class SyncHttpClient<E>
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		return executeTask(RequestMode.PUT, requestUri, headers, postData, response);
+		executeTask(RequestMode.PUT, requestUri, headers, postData, response);
 	}
 
 	/**
 	 * Performs a PATCH request on the baseUr
 	 * @param response The response handler for the request
 	 */
-	public E patch(Processor<?> response)
+	public void patch(ResponseHandler response)
 	{
-		return patch("", null, null, null, response);
-	}
-
-	/**
-	 * Performs a PATCH request on the baseUr
-	 * @param path The path extended from the baseUri
-	 */
-	public E patch(String path)
-	{
-		return patch(path, null, null, null, new ByteArrayProcessor());
+		patch("", null, null, null, response);
 	}
 
 	/**
@@ -982,9 +919,9 @@ public class SyncHttpClient<E>
 	 * @param path The path extended from the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E patch(String path, Processor<?> response)
+	public void patch(String path, ResponseHandler response)
 	{
-		return patch(path, null, null, null, response);
+		patch(path, null, null, null, response);
 	}
 
 	/**
@@ -992,75 +929,75 @@ public class SyncHttpClient<E>
 	 * @param params The Query params to append to the baseUri
 	 * @param response The response handler for the request
 	 */
-	public E patch(List<NameValuePair> params, Processor<?> response)
+	public void patch(List<NameValuePair> params, ResponseHandler response)
 	{
-		return patch("", params, null, null, response);
+		patch("", params, null, null, response);
 	}
 
 	/**
 	 * Performs a PATCH request on the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public E patch(List<NameValuePair> params, List<Header> headers, Processor<?> response)
-	{
-		return patch("", params, null, headers, response);
-	}
-
-	/**
-	 * Performs a PATCH request on the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public E patch(HttpEntity postData, Processor<?> response)
-	{
-		return patch("", null, postData, null, response);
-	}
-
-	/**
-	 * Performs a PATCH request on the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param headers The request headers for the connection
-	 * @param response The response handler for the request
-	 */
-	public E patch(HttpEntity postData, List<Header> headers, Processor<?> response)
-	{
-		return patch("", null, postData, headers, response);
-	}
-
-	/**
-	 * Performs a PATCH request on the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param postData The post data entity to post to the server
-	 * @param response The response handler for the request
-	 */
-	public E patch(List<NameValuePair> params, HttpEntity postData, Processor<?> response)
-	{
-		return patch("", params, postData, null, response);
-	}
-
-	/**
-	 * Performs a PATCH request on the baseUri
-	 * @param path The path extended from the baseUri
-	 * @param params The Query params to append to the baseUri
-	 * @param response The response handler for the request
-	 */
-	public E patch(String path, List<NameValuePair> params, Processor<?> response)
-	{
-		return patch(path, params, null, null, response);
-	}
-
-	/**
-	 * Performs a PATCH request on the baseUri
-	 * @param path The path extended from the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E patch(String path, List<NameValuePair> params, List<Header> headers, Processor<?> response)
+	public void patch(List<NameValuePair> params, List<Header> headers, ResponseHandler response)
 	{
-		return patch(path, params, null, headers, response);
+		patch("", params, null, headers, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public void patch(HttpEntity postData, ResponseHandler response)
+	{
+		patch("", null, postData, null, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void patch(HttpEntity postData, List<Header> headers, ResponseHandler response)
+	{
+		patch("", null, postData, headers, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param response The response handler for the request
+	 */
+	public void patch(List<NameValuePair> params, HttpEntity postData, ResponseHandler response)
+	{
+		patch("", params, postData, null, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param response The response handler for the request
+	 */
+	public void patch(String path, List<NameValuePair> params, ResponseHandler response)
+	{
+		patch(path, params, null, null, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void patch(String path, List<NameValuePair> params, List<Header> headers, ResponseHandler response)
+	{
+		patch(path, params, null, headers, response);
 	}
 
 	/**
@@ -1069,9 +1006,9 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E patch(String path, HttpEntity postData, Processor<?> response)
+	public void patch(String path, HttpEntity postData, ResponseHandler response)
 	{
-		return patch(path, null, postData, null, response);
+		patch(path, null, postData, null, response);
 	}
 
 	/**
@@ -1081,9 +1018,9 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E patch(String path, HttpEntity postData, List<Header> headers, Processor<?> response)
+	public void patch(String path, HttpEntity postData, List<Header> headers, ResponseHandler response)
 	{
-		return patch(path, null, postData, headers, response);
+		patch(path, null, postData, headers, response);
 	}
 
 	/**
@@ -1093,9 +1030,9 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E patch(String path, List<NameValuePair> params, HttpEntity postData, Processor<?> response)
+	public void patch(String path, List<NameValuePair> params, HttpEntity postData, ResponseHandler response)
 	{
-		return patch(path, params, postData, null, response);
+		patch(path, params, postData, null, response);
 	}
 
 	/**
@@ -1106,7 +1043,7 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E patch(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, Processor<?> response)
+	public void patch(String path, List<NameValuePair> params, HttpEntity postData, List<Header> headers, ResponseHandler response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -1114,84 +1051,65 @@ public class SyncHttpClient<E>
 		}
 
 		requestUri = RequestUtil.appendParams(requestUri, params);
-		return executeTask(RequestMode.PATCH, requestUri, headers, postData, response);
+		executeTask(RequestMode.PATCH, requestUri, headers, postData, response);
 	}
 
-	private E executeTask(RequestMode mode, Uri uri, List<Header> headers, HttpEntity sendData, Processor<?> requestProcessor)
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	private void executeTask(RequestMode mode, Uri uri, List<Header> headers, HttpEntity sendData, ResponseHandler response)
 	{
-		executor = new ClientExecutorTask<E>(mode, uri, headers, sendData, requestProcessor);
-		executor.onPreExecute();
-		E response = executor.execute();
-		executor.onPostExecute();
-
-		return response;
-	}
-
-	/**
-	 * Sets whether to allow all ssl, trusted or not
-	 * @param allow
-	 */
-	public void setAllowAllSsl(boolean allow)
-	{
-		this.allowAllSsl = allow;
-	}
-
-	/**
-	 * Gets the connection info <b>after</b> a connection request has been made
-	 * @return The connection info, or null
-	 */
-	public ConnectionInfo getConnectionInfo()
-	{
-		if (executor != null && executor.response != null)
+		if (executorTask != null || (executorTask != null && (executorTask.getStatus() == Status.RUNNING || executorTask.getStatus() == Status.PENDING)))
 		{
-			return executor.response.getConnectionInfo();
+			executorTask.cancel(true);
+			executorTask = null;
 		}
 
-		return null;
+		executorTask = new ClientExecutorTask(mode, uri, headers, sendData, response, allowRedirect);
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+		{
+			executorTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+		}
+		else
+		{
+			executorTask.execute();
+		}
 	}
 
-	private class ClientExecutorTask<F>
+	public class ClientExecutorTask extends AsyncTask<Void, Packet, Void>
 	{
 		private static final int BUFFER_SIZE = 1 * 1024 * 8;
 
-		private final Processor<?> response;
+		private final ResponseHandler response;
 		private final Uri requestUri;
 		private final List<Header> requestHeaders;
 		private final HttpEntity postData;
 		private final RequestMode requestMode;
-		private volatile boolean cancelled = false;
+		private boolean allowRedirect = true;
 
-		public ClientExecutorTask(RequestMode mode, Uri request, List<Header> headers, HttpEntity postData, Processor<?> response)
+		public ClientExecutorTask(RequestMode mode, Uri request, List<Header> headers, HttpEntity postData, ResponseHandler response, boolean allowRedirect)
 		{
 			this.response = response;
 			this.requestUri = request;
 			this.requestHeaders = headers;
 			this.postData = postData;
 			this.requestMode = mode;
+			this.allowRedirect = allowRedirect;
 		}
 
-		public boolean isCancelled()
+		@Override protected void onPreExecute()
 		{
-			return cancelled;
-		}
-
-		public void cancel()
-		{
-			cancelled = true;
-		}
-
-		public void onPreExecute()
-		{
+			super.onPreExecute();
 			if (this.response != null)
 			{
+				this.response.getConnectionInfo().connectionUrl = requestUri.toString();
 				this.response.getConnectionInfo().connectionTime = System.currentTimeMillis();
 				this.response.getConnectionInfo().requestMethod = requestMode;
+				this.response.getConnectionInfo().requestHeaders = requestHeaders;
 				this.response.onSend();
 			}
 		}
 
-		@SuppressWarnings("unchecked")
-		public F execute()
+		@Override protected Void doInBackground(Void... params)
 		{
 			HttpClient httpClient;
 
@@ -1220,11 +1138,6 @@ public class SyncHttpClient<E>
 
 			try
 			{
-				if (this.response != null)
-				{
-					this.response.getConnectionInfo().connectionUrl = requestUri.toString();
-				}
-
 				System.setProperty("http.keepAlive", "false");
 
 				if (requestMode == RequestMode.GET)
@@ -1257,20 +1170,22 @@ public class SyncHttpClient<E>
 				}
 
 				HttpParams p = httpClient.getParams();
+				HttpClientParams.setRedirecting(p, allowRedirect);
 				HttpConnectionParams.setConnectionTimeout(p, (int)requestTimeout);
 				HttpConnectionParams.setSoTimeout(p, (int)requestTimeout);
 				request.setHeader("Connection", "close");
+				request.setHeader("User-Agent", userAgent);
 
 				if (postData != null)
 				{
-					request.setHeader(postData.getContentType().getName(), postData.getContentType().getValue());
+					request.addHeader(postData.getContentType().getName(), postData.getContentType().getValue());
 				}
 
 				if (requestHeaders != null)
 				{
 					for (Header header : requestHeaders)
 					{
-						request.setHeader(header.getName(), header.getValue());
+						request.addHeader(header.getName(), header.getValue());
 					}
 				}
 
@@ -1290,6 +1205,8 @@ public class SyncHttpClient<E>
 							{
 								response.onPublishedUploadProgress(buffer, len, contentLength);
 								response.onPublishedUploadProgress(buffer, len, transferred, contentLength);
+
+								publishProgress(new Packet(transferred, contentLength, false));
 							}
 						}
 					}));
@@ -1299,19 +1216,29 @@ public class SyncHttpClient<E>
 				HttpResponse response = httpClient.execute(request, httpContext);
 				int responseCode = response.getStatusLine().getStatusCode();
 
+				if (response.getAllHeaders() != null && this.response != null)
+				{
+					this.response.getConnectionInfo().responseHeaders = new LinkedHashMap<String, String>();
+					for (Header header : response.getAllHeaders())
+					{
+						this.response.getConnectionInfo().responseHeaders.put(header.getName(), header.getValue());
+					}
+				}
+
 				if (response.getEntity() != null)
 				{
 					String encoding = response.getEntity().getContentEncoding() == null ? "" : response.getEntity().getContentEncoding().getValue();
 					long contentLength = response.getEntity().getContentLength();
-					InputStream i = response.getEntity().getContent();
+					InputStream responseStream;
+					InputStream stream = response.getEntity().getContent();
 
 					if ("gzip".equals(encoding))
 					{
-						i = new GZIPInputStream(new BufferedInputStream(i, BUFFER_SIZE));
+						responseStream = new GZIPInputStream(new BufferedInputStream(stream, BUFFER_SIZE));
 					}
 					else
 					{
-						i = new BufferedInputStream(i, BUFFER_SIZE);
+						responseStream = new BufferedInputStream(stream, BUFFER_SIZE);
 					}
 
 					if (this.response != null && !isCancelled())
@@ -1321,33 +1248,10 @@ public class SyncHttpClient<E>
 
 					try
 					{
-						if (contentLength != 0)
+						if (this.response != null && contentLength != 0 && !isCancelled())
 						{
-							byte[] buffer = new byte[BUFFER_SIZE];
-
-							int len = 0;
-							int readCount = 0;
-							while ((len = i.read(buffer)) > -1 && !isCancelled())
-							{
-								if (this.response != null)
-								{
-									this.response.onPublishedDownloadProgress(buffer, len, contentLength);
-									this.response.onPublishedDownloadProgress(buffer, len, readCount, contentLength);
-								}
-
-								readCount += len;
-							}
-
-							if (this.response != null && !isCancelled())
-							{
-								this.response.getConnectionInfo().responseLength = readCount;
-
-								// we fake the content length, because it can be -1
-								this.response.onPublishedDownloadProgress(null, readCount, readCount);
-								this.response.onPublishedDownloadProgress(null, readCount, readCount, readCount);
-							}
-
-							i.close();
+							this.response.onBeginPublishedDownloadProgress(responseStream, this, contentLength);
+							this.response.generateContent();
 						}
 					}
 					catch (SocketTimeoutException timeout)
@@ -1358,11 +1262,14 @@ public class SyncHttpClient<E>
 					{
 						e.printStackTrace();
 					}
+					finally
+					{
+						responseStream.close();
+					}
 				}
 
 				if (this.response != null && !isCancelled())
 				{
-					this.response.getConnectionInfo().responseTime = System.currentTimeMillis();
 					this.response.getConnectionInfo().responseCode = responseCode;
 				}
 			}
@@ -1373,14 +1280,64 @@ public class SyncHttpClient<E>
 
 			if (this.response != null && !isCancelled())
 			{
-				return (F)this.response.getContent();
+				this.response.getConnectionInfo().responseTime = System.currentTimeMillis();
+
+				if (this.response.getConnectionInfo().responseCode < 400 && this.response.getConnectionInfo().responseCode > 100)
+				{
+					this.response.onSuccess();
+				}
+				else
+				{
+					this.response.onFailure();
+				}
 			}
 
 			return null;
 		}
 
-		public void onPostExecute()
+		@Override protected void onProgressUpdate(Packet... values)
 		{
+			super.onProgressUpdate(values);
+
+			if (this.response != null && !isCancelled())
+			{
+				if (values[0].isDownload)
+				{
+					this.response.onPublishedDownloadProgressUI(values[0].length, values[0].total);
+				}
+				else
+				{
+					this.response.onPublishedUploadProgressUI(values[0].length, values[0].total);
+				}
+			}
 		}
+
+		@Override protected void onPostExecute(Void result)
+		{
+			super.onPostExecute(result);
+
+			if (this.response != null && !isCancelled())
+			{
+				this.response.beforeCallback();
+				this.response.beforeFinish();
+				this.response.onFinish();
+				this.response.onFinish(this.response.getConnectionInfo().responseCode >= 400 || this.response.getConnectionInfo().responseCode == 0);
+			}
+		}
+
+		public void postPublishProgress(Packet... values)
+		{
+			publishProgress(values);
+		}
+	}
+
+	public void setAllowAllSsl(boolean allow)
+	{
+		this.allowAllSsl = allow;
+	}
+
+	public void setAllowRedirect(boolean allow)
+	{
+		this.allowRedirect = allow;
 	}
 }
