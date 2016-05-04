@@ -172,7 +172,6 @@ public abstract class ResponseHandler<E>
 	 * @return The generated content object
 	 */
 	@Nullable
-	@WorkerThread
 	public abstract E getContent();
 
 	/**

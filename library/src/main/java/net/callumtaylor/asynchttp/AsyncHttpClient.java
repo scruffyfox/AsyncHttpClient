@@ -21,17 +21,15 @@ import okhttp3.Headers;
 import okhttp3.RequestBody;
 
 /**
- * @mainpage
- *
  * The client class used for initiating HTTP requests using an AsyncTask. It
- * follows a RESTful paradigm for the connections with the 4 possible methods,
- * GET, POST, PUT and DELETE.
+ * follows a RESTful paradigm for the connections with the 7 possible methods,
+ * GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD.
  *
  * <b>Note:</b> Because AsyncHttpClient uses
  * AsyncTask, only one instance can be created at a time. If one client makes 2
  * requests, the first request is canceled for the new request. You can either
  * wait for the first to finish before making the second, or you can create two
- * seperate instances.
+ * separate instances.
  *
  * <b>Depends on</b>
  * <ul>
@@ -43,112 +41,53 @@ import okhttp3.RequestBody;
  * <li>{@link RequestMode}</li>
  * <li>{@link RequestUtil}</li>
  * </ul>
- * <h1>Example GET</h1>
  *
- * <pre>
- * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
- * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
- * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
- *
- * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
- * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
- *
- * client.get(&quot;api/v1/&quot;, params, headers, new JsonResponseHandler()
- * {
- * 	&#064;Override public void onSuccess()
- * 	{
- * 		JsonElement result = getContent();
- * 	}
- * });
- * </pre>
- *
- * <h1>Example DELETE</h1>
- *
- * <pre>
- * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
- * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
- * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
- *
- * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
- * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
- *
- * client.delete(&quot;api/v1/&quot;, params, headers, new JsonResponseHandler()
- * {
- * 	&#064;Override public void onSuccess()
- * 	{
- * 		JsonElement result = getContent();
- * 	}
- * });
- * </pre>
- *
- * <h1>Example POST - Single Entity</h1>
- *
- * <pre>
- * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
- * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
- * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
- *
- * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
- * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
- *
- * JsonEntity data = new JsonEntity(&quot;{\&quot;key\&quot;:\&quot;value\&quot;}&quot;);
- * GzippedEntity entity = new GzippedEntity(data);
- *
- * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
- * {
- * 	&#064;Override public void onSuccess()
- * 	{
- * 		JsonElement result = getContent();
- * 	}
- * });
- * </pre>
- *
- * <h1>Example POST - Multiple Entity + file</h1>
- *
- * <pre>
- * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
- * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
- * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
- *
- * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
- * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
- *
- * MultiPartEntity entity = new MultiPartEntity();
- * FileEntity data1 = new FileEntity(new File(&quot;/IMG_6614.JPG&quot;), &quot;image/jpeg&quot;);
- * JsonEntity data2 = new JsonEntity(&quot;{\&quot;key\&quot;:\&quot;value\&quot;}&quot;);
- * entity.addFilePart(&quot;image1.jpg&quot;, data1);
- * entity.addPart(&quot;content1&quot;, data2);
- *
- * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
- * {
- * 	&#064;Override public void onSuccess()
- * 	{
- * 		JsonElement result = getContent();
- * 	}
- * });
- * </pre>
- *
- * <h1>Example PUT</h1>
- *
- * <pre>
- * AsyncHttpClient client = new AsyncHttpClient(&quot;http://example.com&quot;);
- * List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
- * params.add(new BasicNameValuePair(&quot;key&quot;, &quot;value&quot;));
- *
- * List&lt;Header&gt; headers = new ArrayList&lt;Header&gt;();
- * headers.add(new BasicHeader(&quot;1&quot;, &quot;2&quot;));
- *
- * JsonEntity data = new JsonEntity(&quot;{\&quot;key\&quot;:\&quot;value\&quot;}&quot;);
- * GzippedEntity entity = new GzippedEntity(data);
- *
- * client.post(&quot;api/v1/&quot;, params, entity, headers, new JsonResponseHandler()
- * {
- * 	&#064;Override public void onSuccess()
- * 	{
- * 		JsonElement result = getContent();
- * 	}
- * });
- * </pre>
+ * The library uses OKHttp for its HTTP request client so follows the same patterns for request bodies and headers.
+ * <p />
+ * Example GET
+ * <code>
+ 	new AsyncHttpClient("http://httpbin.org/")
+		.get("get", new JsonResponseHandler()
+		{
+			@Override public void onFinish()
+			{
+
+			}
+		});
+ * </code>
+ * <p />
+ * Example POST
+ * <code>
+ 	RequestBody postBody = RequestBody.create(MediaType.parse("application/json"), "{\"test\":\"hello world\"}");
+
+	new AsyncHttpClient("http://httpbin.org/")
+		.post("post", postBody, new JsonResponseHandler()
+		{
+			@Override public void onFinish()
+			{
+
+			}
+		});
+ * </code>
+ * <p />
+ * Example progress for large content respose/post
+ * <code>
+	RequestBody postBody = MultipartBody.create(MediaType.parse("application/octet-stream"), new byte[1024 * 12]);
+
+	new AsyncHttpClient("http://httpbin.org/")
+		.post("post", postBody, new JsonResponseHandler()
+		{
+			@Override public void onByteChunkSentProcessed(long totalProcessed, long totalLength)
+			{
+				// Post to UI progress dialog
+			}
+
+			@Override public void onFinish()
+			{
+
+			}
+		});
+ * </code>
  *
  * Because of the nature of REST, GET and DELETE requests behave in the same
  * way, POST and PUT requests also behave in the same way.
@@ -1100,11 +1039,19 @@ public class AsyncHttpClient
 		}
 	}
 
+	/**
+	 * Sets to allow all SSL. This is insecure, avoid using this method.
+	 * @param allow Allow all SSL true/false
+	 */
 	public void setAllowAllSsl(boolean allow)
 	{
 		this.allowAllSsl = allow;
 	}
 
+	/**
+	 * Sets to auto redirect on 302 responses
+	 * @param allow Allow redirect true/false
+	 */
 	public void setAllowRedirect(boolean allow)
 	{
 		this.allowRedirect = allow;

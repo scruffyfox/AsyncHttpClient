@@ -3,6 +3,10 @@ package net.callumtaylor.asynchttp.response;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+/**
+ * Gson response handler used for automatically parsing a response into objects using Gson and class types
+ * @param <T>
+ */
 public class GsonResponseHandler<T> extends ResponseHandler<T>
 {
 	private Class<T> outClass;
