@@ -2,11 +2,16 @@ apply plugin: 'com.android.library'
 
 android {
 	compileSdkVersion 23
-	buildToolsVersion "23.0.2"
+	buildToolsVersion "23.0.3"
 
 	defaultConfig {
 		minSdkVersion 9
 		targetSdkVersion 23
+
+		testApplicationId "net.callumtaylor.asynchttp.test"
+		testInstrumentationRunner "net.callumtaylor.asynchttp.test.Runner"
+		testHandleProfiling true
+		testFunctionalTest true
 	}
 
 	packagingOptions {
@@ -26,14 +31,11 @@ android {
 	lintOptions {
 		abortOnError false
 	}
-
-	useLibrary 'org.apache.http.legacy'
 }
 
 dependencies {
-	compile 'org.apache.httpcomponents:httpclient:4.2.5'
-	compile 'org.apache.httpcomponents:httpmime:4.2.5'
-	compile 'com.google.code.gson:gson:2.6.1'
+	compile 'com.squareup.okhttp3:okhttp:3.2.0'
+	compile 'com.google.code.gson:gson:2.6.2'
 }
 
 apply from: '../gradle/sonatype.gradle'

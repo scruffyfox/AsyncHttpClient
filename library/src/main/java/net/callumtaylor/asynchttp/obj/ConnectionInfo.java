@@ -1,9 +1,6 @@
 package net.callumtaylor.asynchttp.obj;
 
-import org.apache.http.Header;
-
-import java.util.List;
-import java.util.Map;
+import okhttp3.Headers;
 
 public class ConnectionInfo
 {
@@ -16,8 +13,8 @@ public class ConnectionInfo
 	public int responseCode = 0;
 	public long responseTime = 0L;
 
-	public List<Header> requestHeaders;
-	public Map<String, String> responseHeaders;
+	public Headers requestHeaders;
+	public Headers responseHeaders;
 
 	@Override public String toString()
 	{
