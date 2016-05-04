@@ -5,6 +5,9 @@ import android.graphics.BitmapFactory;
 
 import java.io.ByteArrayOutputStream;
 
+/**
+ * Convenience response handler class for receiving a bitmap stream.
+ */
 public class BitmapResponseHandler extends ResponseHandler<Bitmap>
 {
 	private ByteArrayOutputStream byteBuffer;

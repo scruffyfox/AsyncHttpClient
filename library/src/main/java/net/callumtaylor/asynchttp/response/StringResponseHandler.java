@@ -1,5 +1,8 @@
 package net.callumtaylor.asynchttp.response;
 
+/**
+ * Basic string response handler. Useful for parsing non-binary responses into any format
+ */
 public class StringResponseHandler extends ResponseHandler<String>
 {
 	private StringBuffer stringBuffer;
