@@ -59,16 +59,16 @@ public class AsyncGetTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("bytes/16384", new ByteArrayResponseHandler()
 			{
-				@Override public void onBeginPublishedDownloadProgress(InputStream stream, ClientTaskImpl client, long totalLength) throws SocketTimeoutException, Exception
+				@Override public void onRecieveStream(InputStream stream, ClientTaskImpl client, long totalLength) throws SocketTimeoutException, Exception
 				{
-					super.onBeginPublishedDownloadProgress(stream, client, totalLength);
+					super.onRecieveStream(stream, client, totalLength);
 
 					Assert.assertEquals(totalLength, 16384);
 				}
 
-				@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+				@Override public void onByteChunkReceived(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 				{
-					super.onPublishedDownloadProgress(chunk, chunkLength, totalProcessed, totalLength);
+					super.onByteChunkReceived(chunk, chunkLength, totalProcessed, totalLength);
 
 					// End should have been reached
 					if (chunk == null)
@@ -81,7 +81,7 @@ public class AsyncGetTest extends AndroidTestCase
 					Assert.assertEquals(totalLength, 16384);
 				}
 
-				@Override public void onPublishedDownloadProgressUI(long totalProcessed, long totalLength)
+				@Override public void onByteChunkReceivedProcessed(long totalProcessed, long totalLength)
 				{
 					Assert.assertTrue(totalProcessed >= 0);
 					Assert.assertEquals(totalLength, 16384);

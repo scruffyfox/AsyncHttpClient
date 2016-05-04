@@ -12,11 +12,11 @@ import java.net.SocketTimeoutException;
  * flow is as follows:
  *
  * <pre>
- * onSend -> onPublishedUploadProgress -> onPublishedDownloadProgress -> beforeCallback -> onSuccess/onFailure -> beforeFinish -> onFinish
+ * onSend -> onByteChunkSent -> onByteChunkReceived -> beforeSuccess -> onSuccess/onFailure -> beforeFinish -> onFinish
  * </pre>
  *
- * {@link ResponseHandler#onPublishedDownloadProgress}, {@link ResponseHandler#onPublishedUploadProgress},
- * {@link ResponseHandler#beforeCallback}, {@link ResponseHandler#onSuccess}, and {@link ResponseHandler#onFailure} all run in
+ * {@link ResponseHandler#onByteChunkReceived}, {@link ResponseHandler#onByteChunkSent},
+ * {@link ResponseHandler#beforeSuccess}, {@link ResponseHandler#onSuccess}, and {@link ResponseHandler#onFailure} all run in
  * the background thread. All your processing should be handled in one of those
  * 4 methods and then either call to run on UI thread a new runnable, or handle
  * in {@link ResponseHandler#onFinish} which runs on the UI thread
@@ -43,13 +43,13 @@ public abstract class ResponseHandler<E>
 	 * Called when processing the response from a stream. Use this to override
 	 * the processing of the InputStream to handle the response differently.
 	 * Default is to read the response as a byte-array which gets passed, chunk
-	 * by chunk, to {@link ResponseHandler#onPublishedDownloadProgress}
+	 * by chunk, to {@link ResponseHandler#onByteChunkReceived}
 	 *
 	 * @param stream
 	 *            The response InputStream
 	 * @param client
 	 *            The client task. In order to call
-	 *            {@link ResponseHandler#onPublishedDownloadProgressUI}, you must call
+	 *            {@link ResponseHandler#onByteChunkReceivedProcessed}, you must call
 	 *            <code>client.postPublishProgress(new Packet(int readCount, int totalLength, boolean isDownload))</code>
 	 *            This is required when displaying a progress indicator.
 	 * @param totalLength
@@ -57,7 +57,7 @@ public abstract class ResponseHandler<E>
 	 * @throws SocketTimeoutException
 	 * @throws Exception
 	 */
-	public void onBeginPublishedDownloadProgress(InputStream stream, ClientTaskImpl client, long totalLength) throws SocketTimeoutException, Exception
+	public void onRecieveStream(InputStream stream, ClientTaskImpl client, long totalLength) throws SocketTimeoutException, Exception
 	{
 		byte[] buffer = new byte[8196];
 
@@ -65,8 +65,7 @@ public abstract class ResponseHandler<E>
 		int readCount = 0;
 		while ((len = stream.read(buffer)) > -1 && !client.isCancelled())
 		{
-			onPublishedDownloadProgress(buffer, len, totalLength);
-			onPublishedDownloadProgress(buffer, len, readCount, totalLength);
+			onByteChunkReceived(buffer, len, readCount, totalLength);
 
 			client.transferProgress(new Packet(readCount, totalLength, true));
 
@@ -78,8 +77,7 @@ public abstract class ResponseHandler<E>
 			getConnectionInfo().responseLength = readCount;
 
 			// we fake the content length, because it can be -1
-			onPublishedDownloadProgress(null, readCount, readCount);
-			onPublishedDownloadProgress(null, readCount, readCount, readCount);
+			onByteChunkReceived(null, readCount, readCount, readCount);
 
 			client.transferProgress(new Packet(readCount, totalLength, true));
 		}
@@ -96,28 +94,13 @@ public abstract class ResponseHandler<E>
 	 *            The chunk of data. This will be the <b>null</b> after the total amount has been downloaded.
 	 * @param chunkLength
 	 *            The length of the chunk
-	 * @param totalLength
-	 *            The total size of the request. <b>note:</b> This <i>can</i> be
-	 *            -1 during download.
-	 */
-	public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalLength){}
-
-	/**
-	 * Called when a chunk has been downloaded from the request. This will be
-	 * called once every chunk request, and once extra when all the content is
-	 * downloaded.
-	 *
-	 * @param chunk
-	 *            The chunk of data. This will be the <b>null</b> after the total amount has been downloaded.
-	 * @param chunkLength
-	 *            The length of the chunk
 	 * @param totalProcessed
 	 *            The total amount of data processed from the request.
 	 * @param totalLength
 	 *            The total size of the request. <b>note:</b> This <i>can</i> be
 	 *            -1 during download.
 	 */
-	public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength){}
+	public void onByteChunkReceived(byte[] chunk, int chunkLength, long totalProcessed, long totalLength){}
 
 	/**
 	 * Runs on the UI thread. Useful for updating progress bars.
@@ -127,29 +110,12 @@ public abstract class ResponseHandler<E>
 	 * @param totalLength
 	 *            The total length of the request
 	 */
-	public void onPublishedDownloadProgressUI(long totalProcessed, long totalLength){}
+	public void onByteChunkReceivedProcessed(long totalProcessed, long totalLength){}
 
 	/**
 	 * Called when a chunk has been uploaded to the request. This will be
 	 * called once every chunk request
 	 *
-	 * @param chunk
-	 *            will be the total byte array when this is called.
-	 * @param chunk
-	 *            The chunk of data
-	 * @param chunkLength
-	 *            The length of the chunk
-	 * @param totalLength
-	 *            The total size of the request.
-	 */
-	public void onPublishedUploadProgress(byte[] chunk, long chunkLength, long totalLength){}
-
-	/**
-	 * Called when a chunk has been uploaded to the request. This will be
-	 * called once every chunk request
-	 *
-	 * @param chunk
-	 *            will be the total byte array when this is called.
 	 * @param chunk
 	 *            The chunk of data
 	 * @param chunkLength
@@ -159,7 +125,7 @@ public abstract class ResponseHandler<E>
 	 * @param totalLength
 	 *            The total size of the request.
 	 */
-	public void onPublishedUploadProgress(byte[] chunk, long chunkLength, long totalProcessed, long totalLength){}
+	public void onByteChunkSent(byte[] chunk, long chunkLength, long totalProcessed, long totalLength){}
 
 	/**
 	 * Runs on the UI thread. Useful for updating progress bars.
@@ -169,18 +135,18 @@ public abstract class ResponseHandler<E>
 	 * @param totalLength
 	 *            The total length of the request
 	 */
-	public void onPublishedUploadProgressUI(long totalProcessed, long totalLength){}
+	public void onByteChunkSentProcessed(long totalProcessed, long totalLength){}
 
 	/**
 	 * Called just before {@link ResponseHandler#onSuccess}
 	 */
-	public void beforeCallback(){}
+	public void beforeSuccess(){}
 
 	/**
 	 * Override this method to efficiently generate your content from any buffers you have have
 	 * used.
 	 *
-	 * This is called directly after {@link ResponseHandler#onBeginPublishedDownloadProgress} has finished
+	 * This is called directly after {@link ResponseHandler#onRecieveStream} has finished
 	 */
 	public abstract void generateContent();
 
@@ -218,13 +184,4 @@ public abstract class ResponseHandler<E>
 	 * Called when the streams have all finished, success or not
 	 */
 	public void onFinish(){}
-
-	/**
-	 * Called when the streams have all finished, success or not
-	 *
-	 * @param failed
-	 *            If the stream failed or not. Useful to display any UI updates
-	 *            here.
-	 */
-	public void onFinish(boolean failed){}
 }

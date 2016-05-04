@@ -8,7 +8,7 @@ public class JsonResponseHandler extends ResponseHandler<JsonElement>
 	private StringBuffer stringBuffer;
 	private JsonElement content;
 
-	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+	@Override public void onByteChunkReceived(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
 		if (stringBuffer == null)
 		{

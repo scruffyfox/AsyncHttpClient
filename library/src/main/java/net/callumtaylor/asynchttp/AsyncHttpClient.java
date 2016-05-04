@@ -1089,11 +1089,11 @@ public class AsyncHttpClient
 			{
 				if (values[0].isDownload)
 				{
-					clientTask.response.onPublishedDownloadProgressUI(values[0].length, values[0].total);
+					clientTask.response.onByteChunkReceivedProcessed(values[0].length, values[0].total);
 				}
 				else
 				{
-					clientTask.response.onPublishedUploadProgressUI(values[0].length, values[0].total);
+					clientTask.response.onByteChunkSentProcessed(values[0].length, values[0].total);
 				}
 			}
 		}

@@ -64,14 +64,14 @@ public class AsyncPostTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.post("post", postBody, new JsonResponseHandler()
 			{
-				@Override public void onPublishedUploadProgress(byte[] chunk, long chunkLength, long totalProcessed, long totalLength)
+				@Override public void onByteChunkSent(byte[] chunk, long chunkLength, long totalProcessed, long totalLength)
 				{
 					Assert.assertNotNull(chunk);
 					Assert.assertTrue(chunkLength > 0);
 					Assert.assertEquals(totalLength, 16384);
 				}
 
-				@Override public void onPublishedUploadProgressUI(long totalProcessed, long totalLength)
+				@Override public void onByteChunkSentProcessed(long totalProcessed, long totalLength)
 				{
 					Assert.assertTrue(totalProcessed >= 0);
 					Assert.assertEquals(totalLength, 16384);

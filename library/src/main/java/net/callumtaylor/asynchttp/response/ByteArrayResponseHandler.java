@@ -7,7 +7,7 @@ public class ByteArrayResponseHandler extends ResponseHandler<byte[]>
 	private ByteArrayOutputStream byteBuffer;
 	private byte[] bytes;
 
-	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+	@Override public void onByteChunkReceived(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
 		if (byteBuffer == null)
 		{
