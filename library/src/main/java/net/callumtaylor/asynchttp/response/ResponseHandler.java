@@ -1,5 +1,10 @@
 package net.callumtaylor.asynchttp.response;
 
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.annotation.UiThread;
+import android.support.annotation.WorkerThread;
+
 import net.callumtaylor.asynchttp.obj.ClientTaskImpl;
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
 import net.callumtaylor.asynchttp.obj.Packet;
@@ -37,6 +42,7 @@ public abstract class ResponseHandler<E>
 	/**
 	 * Called when the connection is first made
 	 */
+	@WorkerThread
 	public void onSend(){}
 
 	/**
@@ -57,7 +63,8 @@ public abstract class ResponseHandler<E>
 	 * @throws SocketTimeoutException
 	 * @throws Exception
 	 */
-	public void onRecieveStream(InputStream stream, ClientTaskImpl client, long totalLength) throws SocketTimeoutException, Exception
+	@WorkerThread
+	public void onReceiveStream(InputStream stream, ClientTaskImpl client, long totalLength) throws SocketTimeoutException, Exception
 	{
 		byte[] buffer = new byte[8196];
 
@@ -100,7 +107,8 @@ public abstract class ResponseHandler<E>
 	 *            The total size of the request. <b>note:</b> This <i>can</i> be
 	 *            -1 during download.
 	 */
-	public void onByteChunkReceived(byte[] chunk, int chunkLength, long totalProcessed, long totalLength){}
+	@WorkerThread
+	public void onByteChunkReceived(@Nullable byte[] chunk, int chunkLength, long totalProcessed, long totalLength){}
 
 	/**
 	 * Runs on the UI thread. Useful for updating progress bars.
@@ -110,6 +118,7 @@ public abstract class ResponseHandler<E>
 	 * @param totalLength
 	 *            The total length of the request
 	 */
+	@UiThread
 	public void onByteChunkReceivedProcessed(long totalProcessed, long totalLength){}
 
 	/**
@@ -125,7 +134,8 @@ public abstract class ResponseHandler<E>
 	 * @param totalLength
 	 *            The total size of the request.
 	 */
-	public void onByteChunkSent(byte[] chunk, long chunkLength, long totalProcessed, long totalLength){}
+	@WorkerThread
+	public void onByteChunkSent(@NonNull byte[] chunk, long chunkLength, long totalProcessed, long totalLength){}
 
 	/**
 	 * Runs on the UI thread. Useful for updating progress bars.
@@ -135,19 +145,22 @@ public abstract class ResponseHandler<E>
 	 * @param totalLength
 	 *            The total length of the request
 	 */
+	@UiThread
 	public void onByteChunkSentProcessed(long totalProcessed, long totalLength){}
 
 	/**
 	 * Called just before {@link ResponseHandler#onSuccess}
 	 */
+	@WorkerThread
 	public void beforeResponse(){}
 
 	/**
 	 * Override this method to efficiently generate your content from any buffers you have have
 	 * used.
 	 *
-	 * This is called directly after {@link ResponseHandler#onRecieveStream} has finished
+	 * This is called directly after {@link ResponseHandler#onReceiveStream} has finished
 	 */
+	@WorkerThread
 	public abstract void generateContent();
 
 	/**
@@ -158,30 +171,32 @@ public abstract class ResponseHandler<E>
 	 *
 	 * @return The generated content object
 	 */
+	@Nullable
+	@WorkerThread
 	public abstract E getContent();
 
 	/**
 	 * Processes the response from the stream.
 	 * This is <b>not</b> ran on the UI thread
-	 *
-	 * @return The modified data set, or null
 	 */
+	@WorkerThread
 	public void onSuccess(){}
 
 	/**
 	 * Called when a response was not 2xx.
-	 *
-	 * @return The modified data set, or null
 	 */
+	@WorkerThread
 	public void onFailure(){}
 
 	/**
 	 * Called before {@link ResponseHandler#onFinish}
 	 */
+	@WorkerThread
 	public void beforeFinish(){}
 
 	/**
-	 * Called when the streams have all finished, success or not
+	 * Called when the streams have all finished, success or not. This is called on the UI Thread
 	 */
+	@UiThread
 	public void onFinish(){}
 }
