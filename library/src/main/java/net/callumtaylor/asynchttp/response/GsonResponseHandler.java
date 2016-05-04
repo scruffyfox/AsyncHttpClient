@@ -12,10 +12,22 @@ public class GsonResponseHandler<T> extends ResponseHandler<T>
 	private Class<T> outClass;
 	private T content;
 	private StringBuffer stringBuffer;
+	private Gson gson;
 
 	public GsonResponseHandler(Class<T> outClass)
 	{
+		this(new Gson(), outClass);
+	}
+
+	public GsonResponseHandler(GsonBuilder builder, Class<T> outClass)
+	{
+		this(builder.create(), outClass);
+	}
+
+	public GsonResponseHandler(Gson builder, Class<T> outClass)
+	{
 		this.outClass = outClass;
+		this.gson = builder;
 	}
 
 	@Override public void onByteChunkReceived(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
@@ -46,8 +58,7 @@ public class GsonResponseHandler<T> extends ResponseHandler<T>
 	{
 		try
 		{
-			Gson parser = new GsonBuilder().create();
-			this.content = parser.fromJson(stringBuffer.toString(), (Class<T>)outClass);
+			this.content = gson.fromJson(stringBuffer.toString(), (Class<T>)outClass);
 		}
 		catch (Exception e)
 		{
