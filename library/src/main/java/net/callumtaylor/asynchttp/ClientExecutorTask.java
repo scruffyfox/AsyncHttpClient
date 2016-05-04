@@ -148,22 +148,24 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 			Request.Builder request = new Request.Builder()
 				.url(requestUri.toString());
 
-			if (postData != null)
+			if (postData == null)
 			{
-				postData = new CountingRequestBody(postData, new CountingRequestBody.Listener()
-				{
-					@Override public void onRequestProgress(byte[] buffer, long bufferCount, long bytesWritten, long contentLength)
-					{
-						if (response != null)
-						{
-							response.onPublishedUploadProgress(buffer, bufferCount, contentLength);
-							response.onPublishedUploadProgress(buffer, bufferCount, bytesWritten, contentLength);
-
-							transferProgress(new Packet(bytesWritten, contentLength, false));
-						}
-					}
-				});
+				postData = RequestBody.create(null, new byte[0]);
 			}
+
+			postData = new CountingRequestBody(postData, new CountingRequestBody.Listener()
+			{
+				@Override public void onRequestProgress(byte[] buffer, long bufferCount, long bytesWritten, long contentLength)
+				{
+					if (response != null)
+					{
+						response.onPublishedUploadProgress(buffer, bufferCount, contentLength);
+						response.onPublishedUploadProgress(buffer, bufferCount, bytesWritten, contentLength);
+
+						transferProgress(new Packet(bytesWritten, contentLength, false));
+					}
+				}
+			});
 
 			if (requestMode == RequestMode.GET)
 			{
@@ -179,14 +181,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 			}
 			else if (requestMode == RequestMode.DELETE)
 			{
-				if (postData != null)
-				{
-					request = request.delete(postData);
-				}
-				else
-				{
-					request = request.delete();
-				}
+				request = request.delete(postData);
 			}
 			else if (requestMode == RequestMode.HEAD)
 			{
