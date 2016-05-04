@@ -1,6 +1,6 @@
 package net.callumtaylor.asynchttp.response;
 
-import net.callumtaylor.asynchttp.AsyncHttpClient.ClientExecutorTask;
+import net.callumtaylor.asynchttp.obj.ClientTaskImpl;
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
 import net.callumtaylor.asynchttp.obj.Packet;
 
@@ -57,7 +57,7 @@ public abstract class ResponseHandler<E>
 	 * @throws SocketTimeoutException
 	 * @throws Exception
 	 */
-	public void onBeginPublishedDownloadProgress(InputStream stream, ClientExecutorTask client, long totalLength) throws SocketTimeoutException, Exception
+	public void onBeginPublishedDownloadProgress(InputStream stream, ClientTaskImpl client, long totalLength) throws SocketTimeoutException, Exception
 	{
 		byte[] buffer = new byte[8196];
 

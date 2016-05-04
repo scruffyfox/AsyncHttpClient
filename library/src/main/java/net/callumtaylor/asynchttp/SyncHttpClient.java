@@ -1,7 +1,27 @@
 package net.callumtaylor.asynchttp;
 
 import android.net.Uri;
-import android.text.TextUtils;
+
+import net.callumtaylor.asynchttp.obj.ClientTaskImpl;
+import net.callumtaylor.asynchttp.obj.Packet;
+import net.callumtaylor.asynchttp.obj.RequestMode;
+import net.callumtaylor.asynchttp.response.ResponseHandler;
+
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+
+import java.io.BufferedInputStream;
+import java.io.InputStream;
+import java.net.SocketTimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.GZIPInputStream;
+
+import okhttp3.Call;
+import okhttp3.Headers;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 /**
  * @mainpage
@@ -1107,238 +1127,4 @@ public class SyncHttpClient<E>
 //		return null;
 //	}
 //
-//	private class ClientExecutorTask<F>
-//	{
-//		private static final int BUFFER_SIZE = 1 * 1024 * 8;
-//
-//		private final ResponseHandler<?> response;
-//		private final Uri requestUri;
-//		private final List<Header> requestHeaders;
-//		private final HttpEntity postData;
-//		private final RequestMode requestMode;
-//		private volatile boolean cancelled = false;
-//
-//		public ClientExecutorTask(RequestMode mode, Uri request, List<Header> headers, HttpEntity postData, ResponseHandler<?> response)
-//		{
-//			this.response = response;
-//			this.requestUri = request;
-//			this.requestHeaders = headers;
-//			this.postData = postData;
-//			this.requestMode = mode;
-//		}
-//
-//		public boolean isCancelled()
-//		{
-//			return cancelled;
-//		}
-//
-//		public void cancel()
-//		{
-//			cancelled = true;
-//		}
-//
-//		public void onPreExecute()
-//		{
-//			if (this.response != null)
-//			{
-//				this.response.getConnectionInfo().connectionTime = System.currentTimeMillis();
-//				this.response.getConnectionInfo().requestMethod = requestMode;
-//				this.response.onSend();
-//			}
-//		}
-//
-//		@SuppressWarnings("unchecked")
-//		public F execute()
-//		{
-//			HttpClient httpClient;
-//
-//			if (allowAllSsl)
-//			{
-//				SchemeRegistry schemeRegistry = new SchemeRegistry();
-//				schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
-//				schemeRegistry.register(new Scheme("https", new EasySSLSocketFactory(), 443));
-//
-//				HttpParams httpParams = new BasicHttpParams();
-//				httpParams.setParameter(ConnManagerPNames.MAX_TOTAL_CONNECTIONS, 30);
-//				httpParams.setParameter(ConnManagerPNames.MAX_CONNECTIONS_PER_ROUTE, new ConnPerRouteBean(30));
-//				httpParams.setParameter(HttpProtocolParams.USE_EXPECT_CONTINUE, false);
-//				HttpProtocolParams.setVersion(httpParams, HttpVersion.HTTP_1_1);
-//
-//				ClientConnectionManager cm = new ThreadSafeClientConnManager(httpParams, schemeRegistry);
-//				httpClient = new DefaultHttpClient(cm, httpParams);
-//			}
-//			else
-//			{
-//				httpClient = new DefaultHttpClient();
-//			}
-//
-//			HttpContext httpContext = new BasicHttpContext();
-//			HttpRequestBase request = null;
-//
-//			try
-//			{
-//				if (this.response != null)
-//				{
-//					this.response.getConnectionInfo().connectionUrl = requestUri.toString();
-//				}
-//
-//				System.setProperty("http.keepAlive", "false");
-//
-//				if (requestMode == RequestMode.GET)
-//				{
-//					request = new HttpGet(requestUri.toString());
-//				}
-//				else if (requestMode == RequestMode.POST)
-//				{
-//					request = new HttpPost(requestUri.toString());
-//				}
-//				else if (requestMode == RequestMode.PUT)
-//				{
-//					request = new HttpPut(requestUri.toString());
-//				}
-//				else if (requestMode == RequestMode.DELETE)
-//				{
-//					request = new HttpDeleteWithBody(requestUri.toString());
-//				}
-//				else if (requestMode == RequestMode.HEAD)
-//				{
-//					request = new HttpHead(requestUri.toString());
-//				}
-//				else if (requestMode == RequestMode.PATCH)
-//				{
-//					request = new HttpPatch(requestUri.toString());
-//				}
-//				else if (requestMode == RequestMode.OPTIONS)
-//				{
-//					request = new HttpOptions(requestUri.toString());
-//				}
-//
-//				HttpParams p = httpClient.getParams();
-//				HttpConnectionParams.setConnectionTimeout(p, (int)requestTimeout);
-//				HttpConnectionParams.setSoTimeout(p, (int)requestTimeout);
-//				request.setHeader("Connection", "close");
-//				request.setHeader("User-Agent", userAgent);
-//
-//				if (postData != null)
-//				{
-//					request.setHeader(postData.getContentType().getName(), postData.getContentType().getValue());
-//				}
-//
-//				if (requestHeaders != null)
-//				{
-//					for (Header header : requestHeaders)
-//					{
-//						request.setHeader(header.getName(), header.getValue());
-//					}
-//				}
-//
-//				if ((requestMode == RequestMode.POST || requestMode == RequestMode.PUT || requestMode == RequestMode.DELETE || requestMode == RequestMode.PATCH) && postData != null)
-//				{
-//					final long contentLength = postData.getContentLength();
-//					if (this.response != null && !isCancelled())
-//					{
-//						this.response.getConnectionInfo().connectionLength = contentLength;
-//					}
-//
-//					((HttpEntityEnclosingRequestBase)request).setEntity(new ProgressEntityWrapper(postData, new ProgressListener()
-//					{
-//						@Override public void onBytesTransferred(byte[] buffer, int len, long transferred)
-//						{
-//							if (response != null)
-//							{
-//								response.onPublishedUploadProgress(buffer, len, contentLength);
-//								response.onPublishedUploadProgress(buffer, len, transferred, contentLength);
-//							}
-//						}
-//					}));
-//				}
-//
-//				// Get the response
-//				HttpResponse response = httpClient.execute(request, httpContext);
-//				int responseCode = response.getStatusLine().getStatusCode();
-//
-//				if (response.getEntity() != null)
-//				{
-//					String encoding = response.getEntity().getContentEncoding() == null ? "" : response.getEntity().getContentEncoding().getValue();
-//					long contentLength = response.getEntity().getContentLength();
-//					InputStream i = response.getEntity().getContent();
-//
-//					if ("gzip".equals(encoding))
-//					{
-//						i = new GZIPInputStream(new BufferedInputStream(i, BUFFER_SIZE));
-//					}
-//					else
-//					{
-//						i = new BufferedInputStream(i, BUFFER_SIZE);
-//					}
-//
-//					if (this.response != null && !isCancelled())
-//					{
-//						this.response.getConnectionInfo().responseCode = responseCode;
-//					}
-//
-//					try
-//					{
-//						if (contentLength != 0)
-//						{
-//							byte[] buffer = new byte[BUFFER_SIZE];
-//
-//							int len = 0;
-//							int readCount = 0;
-//							while ((len = i.read(buffer)) > -1 && !isCancelled())
-//							{
-//								if (this.response != null)
-//								{
-//									this.response.onPublishedDownloadProgress(buffer, len, contentLength);
-//									this.response.onPublishedDownloadProgress(buffer, len, readCount, contentLength);
-//								}
-//
-//								readCount += len;
-//							}
-//
-//							if (this.response != null && !isCancelled())
-//							{
-//								this.response.getConnectionInfo().responseLength = readCount;
-//
-//								// we fake the content length, because it can be -1
-//								this.response.onPublishedDownloadProgress(null, readCount, readCount);
-//								this.response.onPublishedDownloadProgress(null, readCount, readCount, readCount);
-//							}
-//
-//							i.close();
-//						}
-//					}
-//					catch (SocketTimeoutException timeout)
-//					{
-//						responseCode = 0;
-//					}
-//					catch (Exception e)
-//					{
-//						e.printStackTrace();
-//					}
-//				}
-//
-//				if (this.response != null && !isCancelled())
-//				{
-//					this.response.getConnectionInfo().responseTime = System.currentTimeMillis();
-//					this.response.getConnectionInfo().responseCode = responseCode;
-//				}
-//			}
-//			catch (Exception e)
-//			{
-//				e.printStackTrace();
-//			}
-//
-//			if (this.response != null && !isCancelled())
-//			{
-//				return (F)this.response.getContent();
-//			}
-//
-//			return null;
-//		}
-//
-//		public void onPostExecute()
-//		{
-//		}
-//	}
 }

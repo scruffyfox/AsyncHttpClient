@@ -3,9 +3,9 @@ package net.callumtaylor.asynchttp.test;
 import android.test.InstrumentationTestRunner;
 import android.test.InstrumentationTestSuite;
 
-import net.callumtaylor.asynchttp.AsyncTest;
-
 import junit.framework.TestSuite;
+
+import net.callumtaylor.asynchttp.AsyncTest;
 
 /**
  * Test suite
