@@ -59,9 +59,9 @@ public class AsyncGetTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("bytes/16384", new ByteArrayResponseHandler()
 			{
-				@Override public void onRecieveStream(InputStream stream, ClientTaskImpl client, long totalLength) throws SocketTimeoutException, Exception
+				@Override public void onReceiveStream(InputStream stream, ClientTaskImpl client, long totalLength) throws SocketTimeoutException, Exception
 				{
-					super.onRecieveStream(stream, client, totalLength);
+					super.onReceiveStream(stream, client, totalLength);
 
 					Assert.assertEquals(totalLength, 16384);
 				}
