@@ -6,6 +6,7 @@ import android.test.InstrumentationTestSuite;
 import junit.framework.TestSuite;
 
 import net.callumtaylor.asynchttp.AsyncGetTest;
+import net.callumtaylor.asynchttp.AsyncPostTest;
 
 /**
  * Test suite
@@ -18,6 +19,7 @@ public class Runner extends InstrumentationTestRunner
 		InstrumentationTestSuite suite = new InstrumentationTestSuite(this);
 
 		suite.addTestSuite(AsyncGetTest.class);
+		suite.addTestSuite(AsyncPostTest.class);
 
 		return suite;
 	}
