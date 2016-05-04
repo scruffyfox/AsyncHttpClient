@@ -1098,7 +1098,7 @@ public class SyncHttpClient<E>
 //	{
 //		executor = new ClientExecutorTask<E>(mode, uri, headers, sendData, requestProcessor);
 //		executor.onPreExecute();
-//		E response = executor.execute();
+//		E response = executor.executeTask();
 //		executor.onPostExecute();
 //
 //		return response;

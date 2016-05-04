@@ -3,6 +3,7 @@ package net.callumtaylor.asynchttp;
 import android.net.Uri;
 
 import net.callumtaylor.asynchttp.obj.ClientTaskImpl;
+import net.callumtaylor.asynchttp.obj.CountingRequestBody;
 import net.callumtaylor.asynchttp.obj.Packet;
 import net.callumtaylor.asynchttp.obj.RequestMode;
 import net.callumtaylor.asynchttp.response.ResponseHandler;
@@ -10,8 +11,19 @@ import net.callumtaylor.asynchttp.response.ResponseHandler;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.GZIPInputStream;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import okhttp3.Call;
 import okhttp3.Headers;
@@ -31,16 +43,17 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 {
 	private static final int BUFFER_SIZE = 1024 * 8;
 
-	protected final ResponseHandler response;
-	protected final Uri requestUri;
-	protected final Headers requestHeaders;
-	protected final RequestBody postData;
-	protected final RequestMode requestMode;
+	protected ResponseHandler response;
+	protected Uri requestUri;
+	protected Headers requestHeaders;
+	protected RequestBody postData;
+	protected RequestMode requestMode;
 	protected boolean allowRedirect = true;
+	protected boolean allowAllSsl = false;
 	protected long requestTimeout = 0L;
 	protected AtomicBoolean cancelled = new AtomicBoolean(false);
 
-	public ClientExecutorTask(RequestMode mode, Uri request, Headers headers, RequestBody postData, ResponseHandler response, boolean allowRedirect, long requestTimeout)
+	public ClientExecutorTask(RequestMode mode, Uri request, Headers headers, RequestBody postData, ResponseHandler response, boolean allowRedirect, boolean allowAllSsl, long requestTimeout)
 	{
 		this.response = response;
 		this.requestUri = request;
@@ -48,6 +61,8 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 		this.postData = postData;
 		this.requestMode = mode;
 		this.requestTimeout = requestTimeout;
+		this.allowAllSsl = allowAllSsl;
+		this.allowRedirect = allowRedirect;
 	}
 
 	@Override public boolean isCancelled()
@@ -60,7 +75,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 		cancelled.set(true);
 	}
 
-	@Override public void onPreExecute()
+	@Override public void preExecute()
 	{
 		if (this.response != null)
 		{
@@ -72,33 +87,59 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 		}
 	}
 
-	@Override public F doInBackground()
+	@Override public F executeTask()
 	{
 		OkHttpClient httpClient;
 
-//			if (allowAllSsl)
-//			{
-//				SchemeRegistry schemeRegistry = new SchemeRegistry();
-//				schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
-//				schemeRegistry.register(new Scheme("https", new EasySSLSocketFactory(), 443));
-//
-//				HttpParams httpParams = new BasicHttpParams();
-//				httpParams.setParameter(ConnManagerPNames.MAX_TOTAL_CONNECTIONS, 30);
-//				httpParams.setParameter(ConnManagerPNames.MAX_CONNECTIONS_PER_ROUTE, new ConnPerRouteBean(30));
-//				httpParams.setParameter(HttpProtocolParams.USE_EXPECT_CONTINUE, false);
-//				HttpProtocolParams.setVersion(httpParams, HttpVersion.HTTP_1_1);
-//
-//				ClientConnectionManager cm = new ThreadSafeClientConnManager(httpParams, schemeRegistry);
-//				httpClient = new DefaultHttpClient(cm, httpParams);
-//			}
-//			else
+		httpClient = new OkHttpClient()
+			.newBuilder()
+			.followRedirects(allowRedirect)
+			.followSslRedirects(allowRedirect)
+			.connectTimeout(requestTimeout, TimeUnit.MILLISECONDS)
+			.build();
+
+		if (allowAllSsl)
 		{
-			httpClient = new OkHttpClient()
-				.newBuilder()
-				.followRedirects(allowRedirect)
-				.followSslRedirects(allowRedirect)
-				.connectTimeout(requestTimeout, TimeUnit.MILLISECONDS)
-				.build();
+			try
+			{
+				// Create a trust manager that does not validate certificate chains
+				final TrustManager[] trustAllCerts = new TrustManager[]
+				{
+					new X509TrustManager()
+					{
+						@Override public void checkClientTrusted(X509Certificate[] chain, String authType) throws java.security.cert.CertificateException{}
+						@Override public void checkServerTrusted(X509Certificate[] chain, String authType) throws java.security.cert.CertificateException{}
+
+						@Override public java.security.cert.X509Certificate[] getAcceptedIssuers()
+						{
+							return new java.security.cert.X509Certificate[]{};
+						}
+					}
+				};
+
+				final SSLContext sslContext = SSLContext.getInstance("SSL");
+				sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+				final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+				httpClient = httpClient.newBuilder()
+					.sslSocketFactory(sslSocketFactory)
+					.hostnameVerifier(new HostnameVerifier()
+					{
+						@Override public boolean verify(String hostname, SSLSession session)
+						{
+							return true;
+						}
+					})
+					.build();
+			}
+			catch (NoSuchAlgorithmException e)
+			{
+				e.printStackTrace();
+			}
+			catch (KeyManagementException e)
+			{
+				e.printStackTrace();
+			}
 		}
 
 		try
@@ -107,34 +148,58 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 			Request.Builder request = new Request.Builder()
 				.url(requestUri.toString());
 
+			if (postData != null)
+			{
+				postData = new CountingRequestBody(postData, new CountingRequestBody.Listener()
+				{
+					@Override public void onRequestProgress(byte[] buffer, long bufferCount, long bytesWritten, long contentLength)
+					{
+						if (response != null)
+						{
+							response.onPublishedUploadProgress(buffer, bufferCount, contentLength);
+							response.onPublishedUploadProgress(buffer, bufferCount, bytesWritten, contentLength);
+
+							transferProgress(new Packet(bytesWritten, contentLength, false));
+						}
+					}
+				});
+			}
+
 			if (requestMode == RequestMode.GET)
 			{
 				request = request.get();
 			}
-//				else if (requestMode == RequestMode.POST)
-//				{
-//					request = new HttpPost(requestUri.toString());
-//				}
-//				else if (requestMode == RequestMode.PUT)
-//				{
-//					request = new HttpPut(requestUri.toString());
-//				}
-//				else if (requestMode == RequestMode.DELETE)
-//				{
-//					request = new HttpDeleteWithBody(requestUri.toString());
-//				}
-//				else if (requestMode == RequestMode.HEAD)
-//				{
-//					request = new HttpHead(requestUri.toString());
-//				}
-//				else if (requestMode == RequestMode.PATCH)
-//				{
-//					request = new HttpPatch(requestUri.toString());
-//				}
-//				else if (requestMode == RequestMode.OPTIONS)
-//				{
-//					request = new HttpOptions(requestUri.toString());
-//				}
+			else if (requestMode == RequestMode.POST)
+			{
+				request = request.post(postData);
+			}
+			else if (requestMode == RequestMode.PUT)
+			{
+				request = request.put(postData);
+			}
+			else if (requestMode == RequestMode.DELETE)
+			{
+				if (postData != null)
+				{
+					request = request.delete(postData);
+				}
+				else
+				{
+					request = request.delete();
+				}
+			}
+			else if (requestMode == RequestMode.HEAD)
+			{
+				request = request.head();
+			}
+			else if (requestMode == RequestMode.PATCH)
+			{
+				request = request.patch(postData);
+			}
+			else if (requestMode == RequestMode.OPTIONS)
+			{
+				request = request.method("OPTIONS", null);
+			}
 
 			request.header("Connection", "close");
 
@@ -143,28 +208,14 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 				request.headers(requestHeaders);
 			}
 
-//				if ((requestMode == RequestMode.POST || requestMode == RequestMode.PUT || requestMode == RequestMode.DELETE || requestMode == RequestMode.PATCH) && postData != null)
-//				{
-//					final long contentLength = postData.getContentLength();
-//					if (this.response != null && !isCancelled())
-//					{
-//						this.response.getConnectionInfo().connectionLength = contentLength;
-//					}
-//
-//					((RequestBodyEnclosingRequestBase)request).setEntity(new ProgressEntityWrapper(postData, new ProgressListener()
-//					{
-//						@Override public void onBytesTransferred(byte[] buffer, int len, long transferred)
-//						{
-//							if (response != null)
-//							{
-//								response.onPublishedUploadProgress(buffer, len, contentLength);
-//								response.onPublishedUploadProgress(buffer, len, transferred, contentLength);
-//
-//								publishProgress(new Packet(transferred, contentLength, false));
-//							}
-//						}
-//					}));
-//				}
+			if ((requestMode == RequestMode.POST || requestMode == RequestMode.PUT || requestMode == RequestMode.DELETE || requestMode == RequestMode.PATCH) && postData != null)
+			{
+				final long contentLength = postData.contentLength();
+				if (this.response != null && !isCancelled())
+				{
+					this.response.getConnectionInfo().connectionLength = contentLength;
+				}
+			}
 
 			// Get the response
 			Call call = httpClient.newCall(request.build());
@@ -179,16 +230,16 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 
 			if (response.body() != null)
 			{
-//					String encoding = response.body().getContentEncoding() == null ? "" : response.getEntity().getContentEncoding().getValue();
+				String encoding = response.header("Content-Encoding", "");
 				long contentLength = response.body().contentLength();
 				InputStream responseStream;
 				InputStream stream = response.body().byteStream();
 
-//					if ("gzip".equals(encoding))
-//					{
-//						responseStream = new GZIPInputStream(new BufferedInputStream(stream, BUFFER_SIZE));
-//					}
-//					else
+				if ("gzip".equalsIgnoreCase(encoding))
+				{
+					responseStream = new GZIPInputStream(new BufferedInputStream(stream, BUFFER_SIZE));
+				}
+				else
 				{
 					responseStream = new BufferedInputStream(stream, BUFFER_SIZE);
 				}
@@ -209,6 +260,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 				catch (SocketTimeoutException timeout)
 				{
 					responseCode = 0;
+					timeout.printStackTrace();
 				}
 				catch (Exception e)
 				{
@@ -247,7 +299,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 		return (F)this.response.getContent();
 	}
 
-	@Override public void onPostExecute()
+	@Override public void postExecute()
 	{
 		if (this.response != null && !isCancelled())
 		{
@@ -258,11 +310,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 		}
 	}
 
-	@Override public void postPublishProgress(Packet... values)
-	{
-	}
-
-	@Override public void onProgressUpdate(Packet... values)
+	@Override public void transferProgress(Packet... values)
 	{
 		if (this.response != null && !isCancelled())
 		{

@@ -68,7 +68,7 @@ public abstract class ResponseHandler<E>
 			onPublishedDownloadProgress(buffer, len, totalLength);
 			onPublishedDownloadProgress(buffer, len, readCount, totalLength);
 
-			client.postPublishProgress(new Packet(readCount, totalLength, true));
+			client.transferProgress(new Packet(readCount, totalLength, true));
 
 			readCount += len;
 		}
@@ -81,7 +81,7 @@ public abstract class ResponseHandler<E>
 			onPublishedDownloadProgress(null, readCount, readCount);
 			onPublishedDownloadProgress(null, readCount, readCount, readCount);
 
-			client.postPublishProgress(new Packet(readCount, totalLength, true));
+			client.transferProgress(new Packet(readCount, totalLength, true));
 		}
 
 		stream.close();
@@ -142,7 +142,7 @@ public abstract class ResponseHandler<E>
 	 * @param totalLength
 	 *            The total size of the request.
 	 */
-	public void onPublishedUploadProgress(byte[] chunk, int chunkLength, long totalLength){}
+	public void onPublishedUploadProgress(byte[] chunk, long chunkLength, long totalLength){}
 
 	/**
 	 * Called when a chunk has been uploaded to the request. This will be
@@ -159,7 +159,7 @@ public abstract class ResponseHandler<E>
 	 * @param totalLength
 	 *            The total size of the request.
 	 */
-	public void onPublishedUploadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength){}
+	public void onPublishedUploadProgress(byte[] chunk, long chunkLength, long totalProcessed, long totalLength){}
 
 	/**
 	 * Runs on the UI thread. Useful for updating progress bars.

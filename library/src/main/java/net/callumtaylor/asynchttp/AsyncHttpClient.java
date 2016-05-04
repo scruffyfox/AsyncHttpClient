@@ -7,7 +7,6 @@ import android.os.AsyncTask.Status;
 import android.os.Build;
 import android.text.TextUtils;
 
-import net.callumtaylor.asynchttp.obj.ClientTaskImpl;
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
 import net.callumtaylor.asynchttp.obj.NameValuePair;
 import net.callumtaylor.asynchttp.obj.Packet;
@@ -1027,8 +1026,7 @@ public class AsyncHttpClient
 			executorTask = null;
 		}
 
-		executorTask = new AsyncClientExecutorTask(mode, uri, headers, sendData, response, allowRedirect, requestTimeout);
-
+		executorTask = new AsyncClientExecutorTask(mode, uri, headers, sendData, response, allowRedirect, allowAllSsl, requestTimeout);
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
 		{
 			executorTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -1042,57 +1040,62 @@ public class AsyncHttpClient
 	/**
 	 * Delegate wrapper class for ClientExecutorTask inside an AsyncTask
 	 */
-	protected static class AsyncClientExecutorTask extends AsyncTask<Void, Packet, Void> implements ClientTaskImpl
+	protected static class AsyncClientExecutorTask extends AsyncTask<Void, Packet, Void>
 	{
 		private ClientExecutorTask clientTask;
 
-		public AsyncClientExecutorTask(RequestMode mode, Uri request, Headers headers, RequestBody postData, ResponseHandler response, boolean allowRedirect, long requestTimeout)
+		public AsyncClientExecutorTask(RequestMode mode, Uri request, Headers headers, RequestBody postData, ResponseHandler response, boolean allowRedirect, boolean allowAllSsl, long requestTimeout)
 		{
+			if (headers == null)
+			{
+				headers = new Headers.Builder().build();
+			}
+
 			headers = headers.newBuilder().add("User-Agent", userAgent).build();
 
-			clientTask = new ClientExecutorTask(mode, request, headers, postData, response, allowRedirect, requestTimeout);
+			clientTask = new ClientExecutorTask(mode, request, headers, postData, response, allowRedirect, allowAllSsl, requestTimeout)
+			{
+				@Override public void transferProgress(Packet... values)
+				{
+					publishProgress(values);
+				}
+			};
 		}
 
-		@Override public void cancel()
+		@Override protected void onCancelled()
 		{
-			this.cancel(true);
+			clientTask.cancel();
 		}
 
-		@Override public void onPreExecute()
+		@Override protected void onPreExecute()
 		{
-			clientTask.onPreExecute();
-		}
-
-		@Override public Void doInBackground()
-		{
-			clientTask.doInBackground();
-			return null;
-		}
-
-		@Override public void onPostExecute()
-		{
-			clientTask.onPostExecute();
-		}
-
-		@Override public void onProgressUpdate(Packet... values)
-		{
-			clientTask.onProgressUpdate(values);
+			clientTask.preExecute();
 		}
 
 		@Override protected Void doInBackground(Void... params)
 		{
-			this.doInBackground();
+			clientTask.executeTask();
 			return null;
 		}
 
-		@Override protected void onPostExecute(Void result)
+		@Override protected void onPostExecute(Void aVoid)
 		{
-			this.onPostExecute();
+			clientTask.postExecute();
 		}
 
-		public void postPublishProgress(Packet... values)
+		@Override protected void onProgressUpdate(Packet... values)
 		{
-			this.publishProgress(values);
+			if (clientTask.response != null && !isCancelled())
+			{
+				if (values[0].isDownload)
+				{
+					clientTask.response.onPublishedDownloadProgressUI(values[0].length, values[0].total);
+				}
+				else
+				{
+					clientTask.response.onPublishedUploadProgressUI(values[0].length, values[0].total);
+				}
+			}
 		}
 	}
 
