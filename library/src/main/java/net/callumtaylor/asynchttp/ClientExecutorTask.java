@@ -159,7 +159,6 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 				{
 					if (response != null)
 					{
-						response.onByteChunkSent(buffer, bufferCount, contentLength);
 						response.onByteChunkSent(buffer, bufferCount, bytesWritten, contentLength);
 
 						transferProgress(new Packet(bytesWritten, contentLength, false));
@@ -301,7 +300,6 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 			this.response.beforeSuccess();
 			this.response.beforeFinish();
 			this.response.onFinish();
-			this.response.onFinish(this.response.getConnectionInfo().responseCode >= 400 || this.response.getConnectionInfo().responseCode == 0);
 		}
 	}
 

@@ -36,7 +36,7 @@ public class AsyncPatchTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.patch("patch", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 
@@ -77,7 +77,7 @@ public class AsyncPatchTest extends AndroidTestCase
 					Assert.assertEquals(totalLength, 16384);
 				}
 
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 
@@ -99,7 +99,7 @@ public class AsyncPatchTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.patch("patch", patchBody, new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 					Assert.assertTrue(getContent() instanceof JsonElement);
@@ -120,10 +120,9 @@ public class AsyncPatchTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.patch("status/404", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNull(getContent());
-					Assert.assertTrue(failed);
 					Assert.assertEquals(getConnectionInfo().responseCode, 404);
 
 					signal.countDown();
@@ -144,7 +143,7 @@ public class AsyncPatchTest extends AndroidTestCase
 		new AsyncHttpClient("https://httpbin.org/")
 			.patch("patch", patchBody, new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 					Assert.assertTrue(getContent() instanceof JsonElement);

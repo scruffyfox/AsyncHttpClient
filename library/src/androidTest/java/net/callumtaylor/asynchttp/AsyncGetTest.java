@@ -39,7 +39,7 @@ public class AsyncGetTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("get", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 
@@ -87,7 +87,7 @@ public class AsyncGetTest extends AndroidTestCase
 					Assert.assertEquals(totalLength, 16384);
 				}
 
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 
@@ -107,7 +107,7 @@ public class AsyncGetTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("get", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 					Assert.assertTrue(getContent() instanceof JsonElement);
@@ -126,12 +126,11 @@ public class AsyncGetTest extends AndroidTestCase
 	public void testGet404() throws InterruptedException
 	{
 		new AsyncHttpClient("http://httpbin.org/")
-			.get("get404", new JsonResponseHandler()
+			.get("status/404", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNull(getContent());
-					Assert.assertTrue(failed);
 					Assert.assertEquals(getConnectionInfo().responseCode, 404);
 
 					signal.countDown();
@@ -150,7 +149,7 @@ public class AsyncGetTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("gzip", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 					Assert.assertTrue(getContent() instanceof JsonElement);
@@ -171,7 +170,7 @@ public class AsyncGetTest extends AndroidTestCase
 		new AsyncHttpClient("https://httpbin.org/")
 			.get("get", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 					Assert.assertTrue(getContent() instanceof JsonElement);
@@ -193,10 +192,9 @@ public class AsyncGetTest extends AndroidTestCase
 		client.setAllowAllSsl(true);
 		client.get("get", new StringResponseHandler()
 		{
-			@Override public void onFinish(boolean failed)
+			@Override public void onFinish()
 			{
 				Assert.assertNotNull(getContent());
-				Assert.assertFalse(failed);
 
 				signal.countDown();
 			}
@@ -215,7 +213,7 @@ public class AsyncGetTest extends AndroidTestCase
 		client.setAllowAllSsl(true);
 		client.get("absolute-redirect/1", new JsonResponseHandler()
 		{
-			@Override public void onFinish(boolean failed)
+			@Override public void onFinish()
 			{
 				Assert.assertNotNull(getContent());
 				Assert.assertTrue(getContent() instanceof JsonElement);
@@ -237,7 +235,7 @@ public class AsyncGetTest extends AndroidTestCase
 		client.setAllowAllSsl(true);
 		client.get("/image/png", new BitmapResponseHandler()
 		{
-			@Override public void onFinish(boolean failed)
+			@Override public void onFinish()
 			{
 				Assert.assertNotNull(getContent());
 				Assert.assertTrue(getContent() instanceof Bitmap);
