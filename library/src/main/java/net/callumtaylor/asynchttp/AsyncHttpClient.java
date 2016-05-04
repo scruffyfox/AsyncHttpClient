@@ -1027,7 +1027,7 @@ public class AsyncHttpClient
 			executorTask = null;
 		}
 
-		executorTask = new AsyncClientExecutorTask(mode, uri, headers, sendData, response, allowRedirect);
+		executorTask = new AsyncClientExecutorTask(mode, uri, headers, sendData, response, allowRedirect, requestTimeout);
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
 		{
@@ -1039,20 +1039,23 @@ public class AsyncHttpClient
 		}
 	}
 
+	/**
+	 * Delegate wrapper class for ClientExecutorTask inside an AsyncTask
+	 */
 	protected static class AsyncClientExecutorTask extends AsyncTask<Void, Packet, Void> implements ClientTaskImpl
 	{
-		private static final int BUFFER_SIZE = 1 * 1024 * 8;
-
 		private ClientExecutorTask clientTask;
 
-		public AsyncClientExecutorTask(RequestMode mode, Uri request, Headers headers, RequestBody postData, ResponseHandler response, boolean allowRedirect)
+		public AsyncClientExecutorTask(RequestMode mode, Uri request, Headers headers, RequestBody postData, ResponseHandler response, boolean allowRedirect, long requestTimeout)
 		{
-			clientTask = new ClientExecutorTask(mode, request, headers, postData, response, allowRedirect);
+			headers = headers.newBuilder().add("User-Agent", userAgent).build();
+
+			clientTask = new ClientExecutorTask(mode, request, headers, postData, response, allowRedirect, requestTimeout);
 		}
 
 		@Override public void cancel()
 		{
-			cancel(true);
+			this.cancel(true);
 		}
 
 		@Override public void onPreExecute()
@@ -1073,32 +1076,23 @@ public class AsyncHttpClient
 
 		@Override public void onProgressUpdate(Packet... values)
 		{
-			if (clientTask.response != null && !isCancelled())
-			{
-				if (values[0].isDownload)
-				{
-					clientTask.response.onPublishedDownloadProgressUI(values[0].length, values[0].total);
-				}
-				else
-				{
-					clientTask.response.onPublishedUploadProgressUI(values[0].length, values[0].total);
-				}
-			}
+			clientTask.onProgressUpdate(values);
 		}
 
 		@Override protected Void doInBackground(Void... params)
 		{
-			return doInBackground();
+			this.doInBackground();
+			return null;
 		}
 
 		@Override protected void onPostExecute(Void result)
 		{
-			onPostExecute();
+			this.onPostExecute();
 		}
 
 		public void postPublishProgress(Packet... values)
 		{
-			publishProgress(values);
+			this.publishProgress(values);
 		}
 	}
 

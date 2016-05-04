@@ -10,6 +10,7 @@ import net.callumtaylor.asynchttp.response.ResponseHandler;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import okhttp3.Call;
@@ -28,7 +29,7 @@ import okhttp3.Response;
  */
 public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 {
-	private static final int BUFFER_SIZE = 1 * 1024 * 8;
+	private static final int BUFFER_SIZE = 1024 * 8;
 
 	protected final ResponseHandler response;
 	protected final Uri requestUri;
@@ -36,15 +37,17 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 	protected final RequestBody postData;
 	protected final RequestMode requestMode;
 	protected boolean allowRedirect = true;
+	protected long requestTimeout = 0L;
 	protected AtomicBoolean cancelled = new AtomicBoolean(false);
 
-	public ClientExecutorTask(RequestMode mode, Uri request, Headers headers, RequestBody postData, ResponseHandler response, boolean allowRedirect)
+	public ClientExecutorTask(RequestMode mode, Uri request, Headers headers, RequestBody postData, ResponseHandler response, boolean allowRedirect, long requestTimeout)
 	{
 		this.response = response;
 		this.requestUri = request;
 		this.requestHeaders = headers;
 		this.postData = postData;
 		this.requestMode = mode;
+		this.requestTimeout = requestTimeout;
 	}
 
 	@Override public boolean isCancelled()
@@ -90,7 +93,12 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 //			}
 //			else
 		{
-			httpClient = new OkHttpClient();
+			httpClient = new OkHttpClient()
+				.newBuilder()
+				.followRedirects(allowRedirect)
+				.followSslRedirects(allowRedirect)
+				.connectTimeout(requestTimeout, TimeUnit.MILLISECONDS)
+				.build();
 		}
 
 		try
@@ -128,18 +136,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 //					request = new HttpOptions(requestUri.toString());
 //				}
 
-//				HttpParams p = httpClient.getParams();
-//				HttpClientParams.setRedirecting(p, allowRedirect);
-//				HttpConnectionParams.setConnectionTimeout(p, (int)requestTimeout);
-//				HttpConnectionParams.setSoTimeout(p, (int)requestTimeout);
-
 			request.header("Connection", "close");
-//				request.header("User-Agent", userAgent);
-
-//				if (postData != null)
-//				{
-//					request.header(postData.getContentType().getName(), postData.getContentType().getValue());
-//				}
 
 			if (requestHeaders != null)
 			{
@@ -263,11 +260,20 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 
 	@Override public void postPublishProgress(Packet... values)
 	{
-
 	}
 
 	@Override public void onProgressUpdate(Packet... values)
 	{
-
+		if (this.response != null && !isCancelled())
+		{
+			if (values[0].isDownload)
+			{
+				this.response.onPublishedDownloadProgressUI(values[0].length, values[0].total);
+			}
+			else
+			{
+				this.response.onPublishedUploadProgressUI(values[0].length, values[0].total);
+			}
+		}
 	}
 }
