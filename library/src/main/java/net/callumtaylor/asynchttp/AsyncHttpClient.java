@@ -995,9 +995,9 @@ public class AsyncHttpClient
 
 			clientTask = new ClientExecutorTask(mode, request, headers, postData, response, allowRedirect, allowAllSsl, requestTimeout)
 			{
-				@Override public void transferProgress(Packet... values)
+				@Override public void transferProgress(Packet packet)
 				{
-					publishProgress(values);
+					publishProgress(packet);
 				}
 			};
 		}

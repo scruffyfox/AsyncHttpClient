@@ -303,17 +303,17 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 		}
 	}
 
-	@Override public void transferProgress(Packet... values)
+	@Override public void transferProgress(Packet packet)
 	{
 		if (this.response != null && !isCancelled())
 		{
-			if (values[0].isDownload)
+			if (packet.isDownload)
 			{
-				this.response.onByteChunkReceivedProcessed(values[0].length, values[0].total);
+				this.response.onByteChunkReceivedProcessed(packet.length, packet.total);
 			}
 			else
 			{
-				this.response.onByteChunkSentProcessed(values[0].length, values[0].total);
+				this.response.onByteChunkSentProcessed(packet.length, packet.total);
 			}
 		}
 	}
