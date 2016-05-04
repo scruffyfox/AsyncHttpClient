@@ -12,11 +12,11 @@ import java.net.SocketTimeoutException;
  * flow is as follows:
  *
  * <pre>
- * onSend -> onByteChunkSent -> onByteChunkReceived -> beforeSuccess -> onSuccess/onFailure -> beforeFinish -> onFinish
+ * onSend -> onByteChunkSent -> onByteChunkReceived -> beforeResponse -> onSuccess/onFailure -> beforeFinish -> onFinish
  * </pre>
  *
  * {@link ResponseHandler#onByteChunkReceived}, {@link ResponseHandler#onByteChunkSent},
- * {@link ResponseHandler#beforeSuccess}, {@link ResponseHandler#onSuccess}, and {@link ResponseHandler#onFailure} all run in
+ * {@link ResponseHandler#beforeResponse}, {@link ResponseHandler#onSuccess}, and {@link ResponseHandler#onFailure} all run in
  * the background thread. All your processing should be handled in one of those
  * 4 methods and then either call to run on UI thread a new runnable, or handle
  * in {@link ResponseHandler#onFinish} which runs on the UI thread
@@ -140,7 +140,7 @@ public abstract class ResponseHandler<E>
 	/**
 	 * Called just before {@link ResponseHandler#onSuccess}
 	 */
-	public void beforeSuccess(){}
+	public void beforeResponse(){}
 
 	/**
 	 * Override this method to efficiently generate your content from any buffers you have have

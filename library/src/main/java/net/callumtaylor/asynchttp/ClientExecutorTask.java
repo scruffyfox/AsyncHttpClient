@@ -279,6 +279,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 		if (this.response != null && !isCancelled())
 		{
 			this.response.getConnectionInfo().responseTime = System.currentTimeMillis();
+			this.response.beforeResponse();
 
 			if (this.response.getConnectionInfo().responseCode < 400 && this.response.getConnectionInfo().responseCode > 100)
 			{
@@ -297,7 +298,6 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 	{
 		if (this.response != null && !isCancelled())
 		{
-			this.response.beforeSuccess();
 			this.response.beforeFinish();
 			this.response.onFinish();
 		}
