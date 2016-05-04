@@ -1,6 +1,5 @@
 package net.callumtaylor.asynchttp;
 
-import android.graphics.Bitmap;
 import android.test.AndroidTestCase;
 
 import com.google.gson.JsonElement;
@@ -8,7 +7,6 @@ import com.google.gson.JsonElement;
 import junit.framework.Assert;
 
 import net.callumtaylor.asynchttp.obj.ClientTaskImpl;
-import net.callumtaylor.asynchttp.response.BitmapResponseHandler;
 import net.callumtaylor.asynchttp.response.ByteArrayResponseHandler;
 import net.callumtaylor.asynchttp.response.JsonResponseHandler;
 import net.callumtaylor.asynchttp.response.StringResponseHandler;
@@ -89,7 +87,7 @@ public class AsyncGetTest extends AndroidTestCase
 					Assert.assertEquals(totalLength, 16384);
 				}
 
-				@Override public void onByteChunkReceived(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+				@Override public void onByteChunkReceived(byte[] chunk, long chunkLength, long totalProcessed, long totalLength)
 				{
 					super.onByteChunkReceived(chunk, chunkLength, totalProcessed, totalLength);
 
@@ -240,28 +238,6 @@ public class AsyncGetTest extends AndroidTestCase
 			{
 				Assert.assertNotNull(getContent());
 				Assert.assertTrue(getContent() instanceof JsonElement);
-
-				signal.countDown();
-			}
-		});
-
-		signal.await(1500, TimeUnit.SECONDS);
-	}
-
-	/**
-	 * Tests auto 302 redirect
-	 * @throws InterruptedException
-	 */
-	public void testGetBitmapResponse() throws InterruptedException
-	{
-		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
-		client.setAllowAllSsl(true);
-		client.get("/image/png", new BitmapResponseHandler()
-		{
-			@Override public void onFinish()
-			{
-				Assert.assertNotNull(getContent());
-				Assert.assertTrue(getContent() instanceof Bitmap);
 
 				signal.countDown();
 			}
