@@ -159,8 +159,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 				{
 					if (response != null)
 					{
-						response.onPublishedUploadProgress(buffer, bufferCount, contentLength);
-						response.onPublishedUploadProgress(buffer, bufferCount, bytesWritten, contentLength);
+						response.onByteChunkSent(buffer, bufferCount, bytesWritten, contentLength);
 
 						transferProgress(new Packet(bytesWritten, contentLength, false));
 					}
@@ -248,7 +247,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 				{
 					if (this.response != null && contentLength != 0 && !isCancelled())
 					{
-						this.response.onBeginPublishedDownloadProgress(responseStream, this, contentLength);
+						this.response.onReceiveStream(responseStream, this, contentLength);
 						this.response.generateContent();
 					}
 				}
@@ -280,6 +279,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 		if (this.response != null && !isCancelled())
 		{
 			this.response.getConnectionInfo().responseTime = System.currentTimeMillis();
+			this.response.beforeResponse();
 
 			if (this.response.getConnectionInfo().responseCode < 400 && this.response.getConnectionInfo().responseCode > 100)
 			{
@@ -298,10 +298,8 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 	{
 		if (this.response != null && !isCancelled())
 		{
-			this.response.beforeCallback();
 			this.response.beforeFinish();
 			this.response.onFinish();
-			this.response.onFinish(this.response.getConnectionInfo().responseCode >= 400 || this.response.getConnectionInfo().responseCode == 0);
 		}
 	}
 
@@ -311,11 +309,11 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 		{
 			if (values[0].isDownload)
 			{
-				this.response.onPublishedDownloadProgressUI(values[0].length, values[0].total);
+				this.response.onByteChunkReceivedProcessed(values[0].length, values[0].total);
 			}
 			else
 			{
-				this.response.onPublishedUploadProgressUI(values[0].length, values[0].total);
+				this.response.onByteChunkSentProcessed(values[0].length, values[0].total);
 			}
 		}
 	}

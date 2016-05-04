@@ -31,6 +31,29 @@ public class AsyncGetTest extends AndroidTestCase
 	}
 
 	/**
+	 * Tests custom user agent is sent with request
+	 * @throws InterruptedException
+	 */
+	public void testCustomUserAgent() throws InterruptedException
+	{
+		AsyncHttpClient.userAgent = "custom-user-agent";
+
+		new AsyncHttpClient("http://httpbin.org/")
+			.get("user-agent", new JsonResponseHandler()
+			{
+				@Override public void onFinish()
+				{
+					Assert.assertNotNull(getContent());
+					Assert.assertEquals(getContent().getAsJsonObject().get("user-agent").getAsString(), "custom-user-agent");
+
+					signal.countDown();
+				}
+			});
+
+		signal.await(1500, TimeUnit.SECONDS);
+	}
+
+	/**
 	 * Tests a basic GET request
 	 * @throws InterruptedException
 	 */
@@ -39,7 +62,7 @@ public class AsyncGetTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("get", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 
@@ -59,16 +82,16 @@ public class AsyncGetTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("bytes/16384", new ByteArrayResponseHandler()
 			{
-				@Override public void onBeginPublishedDownloadProgress(InputStream stream, ClientTaskImpl client, long totalLength) throws SocketTimeoutException, Exception
+				@Override public void onReceiveStream(InputStream stream, ClientTaskImpl client, long totalLength) throws SocketTimeoutException, Exception
 				{
-					super.onBeginPublishedDownloadProgress(stream, client, totalLength);
+					super.onReceiveStream(stream, client, totalLength);
 
 					Assert.assertEquals(totalLength, 16384);
 				}
 
-				@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+				@Override public void onByteChunkReceived(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 				{
-					super.onPublishedDownloadProgress(chunk, chunkLength, totalProcessed, totalLength);
+					super.onByteChunkReceived(chunk, chunkLength, totalProcessed, totalLength);
 
 					// End should have been reached
 					if (chunk == null)
@@ -81,13 +104,13 @@ public class AsyncGetTest extends AndroidTestCase
 					Assert.assertEquals(totalLength, 16384);
 				}
 
-				@Override public void onPublishedDownloadProgressUI(long totalProcessed, long totalLength)
+				@Override public void onByteChunkReceivedProcessed(long totalProcessed, long totalLength)
 				{
 					Assert.assertTrue(totalProcessed >= 0);
 					Assert.assertEquals(totalLength, 16384);
 				}
 
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 
@@ -107,7 +130,7 @@ public class AsyncGetTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("get", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 					Assert.assertTrue(getContent() instanceof JsonElement);
@@ -126,12 +149,11 @@ public class AsyncGetTest extends AndroidTestCase
 	public void testGet404() throws InterruptedException
 	{
 		new AsyncHttpClient("http://httpbin.org/")
-			.get("get404", new JsonResponseHandler()
+			.get("status/404", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNull(getContent());
-					Assert.assertTrue(failed);
 					Assert.assertEquals(getConnectionInfo().responseCode, 404);
 
 					signal.countDown();
@@ -150,7 +172,7 @@ public class AsyncGetTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("gzip", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 					Assert.assertTrue(getContent() instanceof JsonElement);
@@ -171,7 +193,7 @@ public class AsyncGetTest extends AndroidTestCase
 		new AsyncHttpClient("https://httpbin.org/")
 			.get("get", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 					Assert.assertTrue(getContent() instanceof JsonElement);
@@ -193,10 +215,9 @@ public class AsyncGetTest extends AndroidTestCase
 		client.setAllowAllSsl(true);
 		client.get("get", new StringResponseHandler()
 		{
-			@Override public void onFinish(boolean failed)
+			@Override public void onFinish()
 			{
 				Assert.assertNotNull(getContent());
-				Assert.assertFalse(failed);
 
 				signal.countDown();
 			}
@@ -215,7 +236,7 @@ public class AsyncGetTest extends AndroidTestCase
 		client.setAllowAllSsl(true);
 		client.get("absolute-redirect/1", new JsonResponseHandler()
 		{
-			@Override public void onFinish(boolean failed)
+			@Override public void onFinish()
 			{
 				Assert.assertNotNull(getContent());
 				Assert.assertTrue(getContent() instanceof JsonElement);
@@ -237,7 +258,7 @@ public class AsyncGetTest extends AndroidTestCase
 		client.setAllowAllSsl(true);
 		client.get("/image/png", new BitmapResponseHandler()
 		{
-			@Override public void onFinish(boolean failed)
+			@Override public void onFinish()
 			{
 				Assert.assertNotNull(getContent());
 				Assert.assertTrue(getContent() instanceof Bitmap);

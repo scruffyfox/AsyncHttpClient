@@ -36,7 +36,7 @@ Alternatively you can add the maven dependancy `net.callumtaylor:asynchttpclient
 #Other notes
 ###Downloading large files
 
-In order to download large files, you will need to subclass `AsyncHttpResponseHandler` and override the `onPublishedDownloadProgress()` method to write directly to cache instead of appending to a `ByteArrayOutputStream` which is what the standard `BinaryResponseHandler` does. This is to stop OOM due to a over-sized output stream.
+In order to download large files, you will need to subclass `AsyncHttpResponseHandler` and override the `onByteChunkReceived()` method to write directly to cache instead of appending to a `ByteArrayOutputStream` which is what the standard `BinaryResponseHandler` does. This is to stop OOM due to a over-sized output stream.
 
 ###AsyncHttpClient
 

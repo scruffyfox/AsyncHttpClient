@@ -3,12 +3,17 @@ package net.callumtaylor.asynchttp.response;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
+/**
+ * Basic Json response handler using the Gson library.
+ *
+ * * This is <b>not</b> the same as {@link JSONArrayResponseHandler} and {@link JSONObjectResponseHandler}
+ */
 public class JsonResponseHandler extends ResponseHandler<JsonElement>
 {
 	private StringBuffer stringBuffer;
 	private JsonElement content;
 
-	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+	@Override public void onByteChunkReceived(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
 		if (stringBuffer == null)
 		{

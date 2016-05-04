@@ -36,7 +36,7 @@ public class AsyncPutTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.put("put", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 
@@ -64,20 +64,20 @@ public class AsyncPutTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.put("put", putBody, new JsonResponseHandler()
 			{
-				@Override public void onPublishedUploadProgress(byte[] chunk, long chunkLength, long totalProcessed, long totalLength)
+				@Override public void onByteChunkSent(byte[] chunk, long chunkLength, long totalProcessed, long totalLength)
 				{
 					Assert.assertNotNull(chunk);
 					Assert.assertTrue(chunkLength > 0);
 					Assert.assertEquals(totalLength, 16384);
 				}
 
-				@Override public void onPublishedUploadProgressUI(long totalProcessed, long totalLength)
+				@Override public void onByteChunkSentProcessed(long totalProcessed, long totalLength)
 				{
 					Assert.assertTrue(totalProcessed >= 0);
 					Assert.assertEquals(totalLength, 16384);
 				}
 
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 
@@ -99,7 +99,7 @@ public class AsyncPutTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.put("put", putBody, new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 					Assert.assertTrue(getContent() instanceof JsonElement);
@@ -120,10 +120,9 @@ public class AsyncPutTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.put("status/404", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNull(getContent());
-					Assert.assertTrue(failed);
 					Assert.assertEquals(getConnectionInfo().responseCode, 404);
 
 					signal.countDown();
@@ -144,7 +143,7 @@ public class AsyncPutTest extends AndroidTestCase
 		new AsyncHttpClient("https://httpbin.org/")
 			.put("put", putBody, new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 					Assert.assertTrue(getContent() instanceof JsonElement);

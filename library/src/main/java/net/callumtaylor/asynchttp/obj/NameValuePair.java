@@ -1,11 +1,7 @@
 package net.callumtaylor.asynchttp.obj;
 
 /**
- * // TODO: Add class description
- *
- * @author Callum Taylor
- * @documentation // TODO Reference flow doc
- * @project AsyncHttpClient
+ * Basic key/value pair class used for request parameters
  */
 public class NameValuePair
 {

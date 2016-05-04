@@ -35,7 +35,7 @@ public class AsyncDeleteTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.delete("delete", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 
@@ -55,7 +55,7 @@ public class AsyncDeleteTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.delete("delete", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 					Assert.assertTrue(getContent() instanceof JsonElement);
@@ -78,7 +78,7 @@ public class AsyncDeleteTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.delete("delete", postBody, new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 					Assert.assertTrue(getContent() instanceof JsonElement);
@@ -99,10 +99,9 @@ public class AsyncDeleteTest extends AndroidTestCase
 		new AsyncHttpClient("http://httpbin.org/")
 			.delete("status/404", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNull(getContent());
-					Assert.assertTrue(failed);
 					Assert.assertEquals(getConnectionInfo().responseCode, 404);
 
 					signal.countDown();
@@ -121,7 +120,7 @@ public class AsyncDeleteTest extends AndroidTestCase
 		new AsyncHttpClient("https://httpbin.org/")
 			.delete("delete", new JsonResponseHandler()
 			{
-				@Override public void onFinish(boolean failed)
+				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
 					Assert.assertTrue(getContent() instanceof JsonElement);

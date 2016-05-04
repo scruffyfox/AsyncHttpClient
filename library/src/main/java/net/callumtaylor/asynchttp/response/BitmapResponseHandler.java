@@ -5,12 +5,15 @@ import android.graphics.BitmapFactory;
 
 import java.io.ByteArrayOutputStream;
 
+/**
+ * Convenience response handler class for receiving a bitmap stream.
+ */
 public class BitmapResponseHandler extends ResponseHandler<Bitmap>
 {
 	private ByteArrayOutputStream byteBuffer;
 	private Bitmap bitmap;
 
-	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+	@Override public void onByteChunkReceived(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
 	{
 		if (byteBuffer == null)
 		{
