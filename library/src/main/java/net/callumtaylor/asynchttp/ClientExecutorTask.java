@@ -33,11 +33,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
- * // TODO: Add class description
- *
- * @author Callum Taylor
- * @documentation // TODO Reference flow doc
- * @project AsyncHttpClient
+ * Main request task used for performing http requests.
  */
 public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 {

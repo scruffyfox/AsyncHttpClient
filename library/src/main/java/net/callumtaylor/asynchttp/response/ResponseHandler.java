@@ -66,7 +66,7 @@ public abstract class ResponseHandler<E>
 	@WorkerThread
 	public void onReceiveStream(InputStream stream, ClientTaskImpl client, long totalLength) throws SocketTimeoutException, Exception
 	{
-		byte[] buffer = new byte[8196];
+		byte[] buffer = new byte[8192];
 
 		int len = 0;
 		int readCount = 0;
@@ -108,7 +108,7 @@ public abstract class ResponseHandler<E>
 	 *            -1 during download.
 	 */
 	@WorkerThread
-	public void onByteChunkReceived(@Nullable byte[] chunk, int chunkLength, long totalProcessed, long totalLength){}
+	public void onByteChunkReceived(@Nullable byte[] chunk, long chunkLength, long totalProcessed, long totalLength){}
 
 	/**
 	 * Runs on the UI thread. Useful for updating progress bars.

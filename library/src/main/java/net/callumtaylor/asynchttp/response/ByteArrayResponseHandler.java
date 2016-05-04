@@ -7,7 +7,7 @@ public class ByteArrayResponseHandler extends ResponseHandler<byte[]>
 	private ByteArrayOutputStream byteBuffer;
 	private byte[] bytes;
 
-	@Override public void onByteChunkReceived(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+	@Override public void onByteChunkReceived(byte[] chunk, long chunkLength, long totalProcessed, long totalLength)
 	{
 		if (byteBuffer == null)
 		{
@@ -17,7 +17,7 @@ public class ByteArrayResponseHandler extends ResponseHandler<byte[]>
 
 		if (chunk != null)
 		{
-			byteBuffer.write(chunk, 0, chunkLength);
+			byteBuffer.write(chunk, 0, (int)chunkLength);
 		}
 	}
 

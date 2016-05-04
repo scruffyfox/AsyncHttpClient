@@ -13,7 +13,7 @@ public class JSONArrayResponseHandler extends ResponseHandler<JSONArray>
 	private StringBuffer stringBuffer;
 	private JSONArray content;
 
-	@Override public void onByteChunkReceived(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+	@Override public void onByteChunkReceived(byte[] chunk, long chunkLength, long totalProcessed, long totalLength)
 	{
 		if (stringBuffer == null)
 		{
@@ -25,7 +25,7 @@ public class JSONArrayResponseHandler extends ResponseHandler<JSONArray>
 		{
 			try
 			{
-				stringBuffer.append(new String(chunk, 0, chunkLength, "UTF-8"));
+				stringBuffer.append(new String(chunk, 0, (int)chunkLength, "UTF-8"));
 			}
 			catch (Exception e)
 			{
