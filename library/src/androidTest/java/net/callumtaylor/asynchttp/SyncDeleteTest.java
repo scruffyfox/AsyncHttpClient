@@ -24,9 +24,8 @@ public class SyncDeleteTest extends AndroidTestCase
 
 	/**
 	 * Tests a basic DELETE request
-	 * @throws InterruptedException
 	 */
-	public void testDelete() throws InterruptedException
+	public void testDelete()
 	{
 		JsonElement response = new SyncHttpClient<JsonElement>("http://httpbin.org/")
 			.delete("delete", new JsonResponseHandler());
@@ -36,9 +35,8 @@ public class SyncDeleteTest extends AndroidTestCase
 
 	/**
 	 * Tests response parses correctly from json
-	 * @throws InterruptedException
 	 */
-	public void testDeleteJson() throws InterruptedException
+	public void testDeleteJson()
 	{
 		RequestBody deleteBody = RequestBody.create(MediaType.parse("application/json"), "{\"test\":\"hello world\"}");
 
@@ -50,9 +48,8 @@ public class SyncDeleteTest extends AndroidTestCase
 
 	/**
 	 * Tests 404 response
-	 * @throws InterruptedException
 	 */
-	public void testDelete404() throws InterruptedException
+	public void testDelete404()
 	{
 		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
 		JsonElement response = client.delete("status/404", new JsonResponseHandler());
@@ -63,9 +60,8 @@ public class SyncDeleteTest extends AndroidTestCase
 
 	/**
 	 * Tests auto 302 redirect
-	 * @throws InterruptedException
 	 */
-	public void testDeleteRedirectJson() throws InterruptedException
+	public void testDeleteRedirectJson()
 	{
 		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
 		client.setAllowRedirect(true);
@@ -77,9 +73,8 @@ public class SyncDeleteTest extends AndroidTestCase
 
 	/**
 	 * Tests no 302 redirect
-	 * @throws InterruptedException
 	 */
-	public void testDeleteNoRedirect() throws InterruptedException
+	public void testDeleteNoRedirect()
 	{
 		SyncHttpClient<String> client = new SyncHttpClient<>("http://httpbin.org/");
 		client.setAllowRedirect(false);

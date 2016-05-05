@@ -24,9 +24,8 @@ public class SyncPatchTest extends AndroidTestCase
 
 	/**
 	 * Tests a basic PATCH request
-	 * @throws InterruptedException
 	 */
-	public void testPatch() throws InterruptedException
+	public void testPatch()
 	{
 		JsonElement response = new SyncHttpClient<JsonElement>("http://httpbin.org/")
 			.patch("patch", new JsonResponseHandler());
@@ -36,9 +35,8 @@ public class SyncPatchTest extends AndroidTestCase
 
 	/**
 	 * Tests response parses correctly from json
-	 * @throws InterruptedException
 	 */
-	public void testPatchJson() throws InterruptedException
+	public void testPatchJson()
 	{
 		RequestBody patchBody = RequestBody.create(MediaType.parse("application/json"), "{\"test\":\"hello world\"}");
 
@@ -50,9 +48,8 @@ public class SyncPatchTest extends AndroidTestCase
 
 	/**
 	 * Tests 404 response
-	 * @throws InterruptedException
 	 */
-	public void testPatch404() throws InterruptedException
+	public void testPatch404()
 	{
 		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
 		JsonElement response = client.patch("status/404", new JsonResponseHandler());
@@ -63,9 +60,8 @@ public class SyncPatchTest extends AndroidTestCase
 
 	/**
 	 * Tests auto 302 redirect
-	 * @throws InterruptedException
 	 */
-	public void testPatchRedirectJson() throws InterruptedException
+	public void testPatchRedirectJson()
 	{
 		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
 		client.setAllowRedirect(true);
@@ -77,9 +73,8 @@ public class SyncPatchTest extends AndroidTestCase
 
 	/**
 	 * Tests no 302 redirect
-	 * @throws InterruptedException
 	 */
-	public void testPatchNoRedirect() throws InterruptedException
+	public void testPatchNoRedirect()
 	{
 		SyncHttpClient<String> client = new SyncHttpClient<>("http://httpbin.org/");
 		client.setAllowRedirect(false);

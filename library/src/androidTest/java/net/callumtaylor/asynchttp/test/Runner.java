@@ -10,6 +10,7 @@ import net.callumtaylor.asynchttp.AsyncGetTest;
 import net.callumtaylor.asynchttp.AsyncPatchTest;
 import net.callumtaylor.asynchttp.AsyncPostTest;
 import net.callumtaylor.asynchttp.AsyncPutTest;
+import net.callumtaylor.asynchttp.OptionsTest;
 import net.callumtaylor.asynchttp.ResponseHandlersTest;
 import net.callumtaylor.asynchttp.SyncDeleteTest;
 import net.callumtaylor.asynchttp.SyncGetTest;
@@ -40,6 +41,7 @@ public class Runner extends InstrumentationTestRunner
 		suite.addTestSuite(SyncPatchTest.class);
 
 		suite.addTestSuite(ResponseHandlersTest.class);
+		suite.addTestSuite(OptionsTest.class);
 
 		return suite;
 	}

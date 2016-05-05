@@ -24,9 +24,8 @@ public class SyncPutTest extends AndroidTestCase
 
 	/**
 	 * Tests a basic PUT request
-	 * @throws InterruptedException
 	 */
-	public void testPut() throws InterruptedException
+	public void testPut()
 	{
 		JsonElement response = new SyncHttpClient<JsonElement>("http://httpbin.org/")
 			.put("put", new JsonResponseHandler());
@@ -36,9 +35,8 @@ public class SyncPutTest extends AndroidTestCase
 
 	/**
 	 * Tests response parses correctly from json
-	 * @throws InterruptedException
 	 */
-	public void testPutJson() throws InterruptedException
+	public void testPutJson()
 	{
 		RequestBody putBody = RequestBody.create(MediaType.parse("application/json"), "{\"test\":\"hello world\"}");
 
@@ -50,9 +48,8 @@ public class SyncPutTest extends AndroidTestCase
 
 	/**
 	 * Tests 404 response
-	 * @throws InterruptedException
 	 */
-	public void testPut404() throws InterruptedException
+	public void testPut404()
 	{
 		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
 		JsonElement response = client.put("status/404", new JsonResponseHandler());
@@ -63,9 +60,8 @@ public class SyncPutTest extends AndroidTestCase
 
 	/**
 	 * Tests auto 302 redirect
-	 * @throws InterruptedException
 	 */
-	public void testPutRedirectJson() throws InterruptedException
+	public void testPutRedirectJson()
 	{
 		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
 		client.setAllowRedirect(true);
@@ -77,9 +73,8 @@ public class SyncPutTest extends AndroidTestCase
 
 	/**
 	 * Tests no 302 redirect
-	 * @throws InterruptedException
 	 */
-	public void testPutNoRedirect() throws InterruptedException
+	public void testPutNoRedirect()
 	{
 		SyncHttpClient<String> client = new SyncHttpClient<>("http://httpbin.org/");
 		client.setAllowRedirect(false);

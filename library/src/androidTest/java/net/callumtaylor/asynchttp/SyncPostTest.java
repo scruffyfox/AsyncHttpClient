@@ -24,9 +24,8 @@ public class SyncPostTest extends AndroidTestCase
 
 	/**
 	 * Tests a basic POST request
-	 * @throws InterruptedException
 	 */
-	public void testPost() throws InterruptedException
+	public void testPost()
 	{
 		JsonElement response = new SyncHttpClient<JsonElement>("http://httpbin.org/")
 			.post("post", new JsonResponseHandler());
@@ -36,9 +35,8 @@ public class SyncPostTest extends AndroidTestCase
 
 	/**
 	 * Tests response parses correctly from json
-	 * @throws InterruptedException
 	 */
-	public void testPostJson() throws InterruptedException
+	public void testPostJson()
 	{
 		RequestBody postBody = RequestBody.create(MediaType.parse("application/json"), "{\"test\":\"hello world\"}");
 
@@ -50,9 +48,8 @@ public class SyncPostTest extends AndroidTestCase
 
 	/**
 	 * Tests 404 response
-	 * @throws InterruptedException
 	 */
-	public void testPost404() throws InterruptedException
+	public void testPost404()
 	{
 		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
 		JsonElement response = client.post("status/404", new JsonResponseHandler());
@@ -63,9 +60,8 @@ public class SyncPostTest extends AndroidTestCase
 
 	/**
 	 * Tests auto 302 redirect
-	 * @throws InterruptedException
 	 */
-	public void testPostRedirectJson() throws InterruptedException
+	public void testPostRedirectJson()
 	{
 		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
 		client.setAllowRedirect(true);
@@ -77,9 +73,8 @@ public class SyncPostTest extends AndroidTestCase
 
 	/**
 	 * Tests no 302 redirect
-	 * @throws InterruptedException
 	 */
-	public void testPostNoRedirect() throws InterruptedException
+	public void testPostNoRedirect()
 	{
 		SyncHttpClient<String> client = new SyncHttpClient<>("http://httpbin.org/");
 		client.setAllowRedirect(false);

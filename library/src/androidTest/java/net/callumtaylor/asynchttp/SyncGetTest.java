@@ -20,25 +20,9 @@ public class SyncGetTest extends AndroidTestCase
 	}
 
 	/**
-	 * Tests custom user agent is sent with request
-	 * @throws InterruptedException
-	 */
-	public void testCustomUserAgent() throws InterruptedException
-	{
-		SyncHttpClient.userAgent = "custom-user-agent";
-
-		JsonElement response = new SyncHttpClient<JsonElement>("http://httpbin.org/")
-			.get("user-agent", new JsonResponseHandler());
-
-		Assert.assertNotNull(response);
-		Assert.assertEquals(response.getAsJsonObject().get("user-agent").getAsString(), "custom-user-agent");
-	}
-
-	/**
 	 * Tests a basic GET request
-	 * @throws InterruptedException
 	 */
-	public void testGet() throws InterruptedException
+	public void testGet()
 	{
 		JsonElement response = new SyncHttpClient<JsonElement>("http://httpbin.org/")
 			.get("get", new JsonResponseHandler());
@@ -48,9 +32,8 @@ public class SyncGetTest extends AndroidTestCase
 
 	/**
 	 * Tests 404 response
-	 * @throws InterruptedException
 	 */
-	public void testGet404() throws InterruptedException
+	public void testGet404()
 	{
 		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
 		JsonElement response = client.get("status/404", new JsonResponseHandler());
@@ -61,9 +44,8 @@ public class SyncGetTest extends AndroidTestCase
 
 	/**
 	 * Tests gzip response
-	 * @throws InterruptedException
 	 */
-	public void testGetGzipJson() throws InterruptedException
+	public void testGetGzipJson()
 	{
 		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
 		JsonElement response = client.get("gzip", new JsonResponseHandler());
@@ -73,9 +55,8 @@ public class SyncGetTest extends AndroidTestCase
 
 	/**
 	 * Tests SSL connection response
-	 * @throws InterruptedException
 	 */
-	public void testGetSslJson() throws InterruptedException
+	public void testGetSslJson()
 	{
 		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("https://httpbin.org/");
 		JsonElement response = client.get("get", new JsonResponseHandler());
@@ -85,9 +66,8 @@ public class SyncGetTest extends AndroidTestCase
 
 	/**
 	 * Tests unsafe SSL connection response
-	 * @throws InterruptedException
 	 */
-	public void testGetUnsafeSslJson() throws InterruptedException
+	public void testGetUnsafeSslJson()
 	{
 		SyncHttpClient<String> client = new SyncHttpClient<>("https://cruxoft.com/");
 		client.setAllowAllSsl(true);
@@ -98,9 +78,8 @@ public class SyncGetTest extends AndroidTestCase
 
 	/**
 	 * Tests auto 302 redirect
-	 * @throws InterruptedException
 	 */
-	public void testGetRedirectJson() throws InterruptedException
+	public void testGetRedirectJson()
 	{
 		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
 		client.setAllowRedirect(true);
@@ -112,9 +91,8 @@ public class SyncGetTest extends AndroidTestCase
 
 	/**
 	 * Tests no 302 redirect
-	 * @throws InterruptedException
 	 */
-	public void testGetNoRedirect() throws InterruptedException
+	public void testGetNoRedirect()
 	{
 		SyncHttpClient<String> client = new SyncHttpClient<>("http://httpbin.org/");
 		client.setAllowRedirect(false);

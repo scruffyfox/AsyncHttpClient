@@ -30,29 +30,6 @@ public class AsyncGetTest extends AndroidTestCase
 	}
 
 	/**
-	 * Tests custom user agent is sent with request
-	 * @throws InterruptedException
-	 */
-	public void testCustomUserAgent() throws InterruptedException
-	{
-		AsyncHttpClient.userAgent = "custom-user-agent";
-
-		new AsyncHttpClient("http://httpbin.org/")
-			.get("user-agent", new JsonResponseHandler()
-			{
-				@Override public void onFinish()
-				{
-					Assert.assertNotNull(getContent());
-					Assert.assertEquals(getContent().getAsJsonObject().get("user-agent").getAsString(), "custom-user-agent");
-
-					signal.countDown();
-				}
-			});
-
-		signal.await(1500, TimeUnit.SECONDS);
-	}
-
-	/**
 	 * Tests a basic GET request
 	 * @throws InterruptedException
 	 */
