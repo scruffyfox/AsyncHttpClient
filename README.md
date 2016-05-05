@@ -46,7 +46,7 @@ In order to download large files, you will need to subclass `AsyncHttpResponseHa
 
 ###SyncHttpClient
 
-`SyncHttpClient` is a paramitized class which means the type you infer to it, is the type that gets returned when calling the method. When supplying a [Processor](https://github.com/scruffyfox/AsyncHttpClient/blob/v1.3/src/net/callumtaylor/asynchttp/processor/Processor.java), that processor must also paramitized with the same type as the `SyncHttpClient` instance.
+`SyncHttpClient` is a paramitized class which means the type you infer to it, is the type that gets returned when calling the method. When supplying a ResponseHandler, that ResponseHandler must also paramitized with the same type as the `SyncHttpClient` instance.
 
 You can also get the info of the request by calling your `SyncHttpClient` instance and `getConnectionInfo()`. This can only be called after the response has been completed.
 
