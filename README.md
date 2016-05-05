@@ -1,5 +1,7 @@
 #AsyncHttpClient by Callum Taylor
 
+[![Build Status](https://travis-ci.org/scruffyfox/AsyncHttpClient.svg?branch=develop)](https://travis-ci.org/scruffyfox/AsyncHttpClient)
+
 Follow me on [Twitter](http://twitter.com/scruffyfox) | [App.net](http://alpha.app.net/scruffyfox) | [Website](http://callumtaylor.net) | [Blog](http://blog.callumtaylor.net)
 
 This is the new and improved version of `AsyncHttpClient` taken from X-Library. It was long due a re-write.
