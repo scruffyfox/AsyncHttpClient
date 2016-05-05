@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 
 /**
  * Gson response handler used for automatically parsing a response into objects using Gson and class types
@@ -11,21 +12,21 @@ import java.io.IOException;
  */
 public class GsonResponseHandler<T> extends StreamResponseHandler<T>
 {
-	private Class<T> outClass;
+	private Type outClass;
 	private T content;
 	private Gson gson;
 
-	public GsonResponseHandler(Class<T> outClass)
+	public GsonResponseHandler(Type outClass)
 	{
 		this(new Gson(), outClass);
 	}
 
-	public GsonResponseHandler(GsonBuilder builder, Class<T> outClass)
+	public GsonResponseHandler(GsonBuilder builder, Type outClass)
 	{
 		this(builder.create(), outClass);
 	}
 
-	public GsonResponseHandler(Gson builder, Class<T> outClass)
+	public GsonResponseHandler(Gson builder, Type outClass)
 	{
 		this.outClass = outClass;
 		this.gson = builder;
@@ -38,7 +39,7 @@ public class GsonResponseHandler<T> extends StreamResponseHandler<T>
 	{
 		try
 		{
-			this.content = gson.fromJson(reader, (Class<T>)outClass);
+			this.content = gson.fromJson(reader, outClass);
 		}
 		catch (Exception e)
 		{
