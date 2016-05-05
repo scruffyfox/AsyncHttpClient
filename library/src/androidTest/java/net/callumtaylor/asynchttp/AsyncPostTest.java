@@ -6,9 +6,12 @@ import com.google.gson.JsonElement;
 
 import junit.framework.Assert;
 
+import net.callumtaylor.asynchttp.obj.InputStreamBody;
 import net.callumtaylor.asynchttp.response.BasicResponseHandler;
 import net.callumtaylor.asynchttp.response.JsonResponseHandler;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -87,6 +90,44 @@ public class AsyncPostTest extends AndroidTestCase
 			});
 
 		signal.await(1500, TimeUnit.MILLISECONDS);
+	}
+
+	/**
+	 * Tests the sending an inputstream correctly sends
+	 * @throws InterruptedException
+	 */
+	public void testPostStream() throws InterruptedException
+	{
+		// Simulate an input stream
+		InputStream is = new ByteArrayInputStream("hello world".getBytes());
+
+		RequestBody postBody = new MultipartBody.Builder()
+			.addFormDataPart("test", "test.bin", InputStreamBody.create(MediaType.parse("application/octet-stream"), is))
+			.build();
+
+		new AsyncHttpClient("http://httpbin.org/")
+			.post("post", postBody, new JsonResponseHandler()
+			{
+				@Override public void onByteChunkSent(byte[] chunk, long chunkLength, long totalProcessed, long totalLength)
+				{
+					Assert.assertNotNull(chunk);
+					Assert.assertTrue(chunkLength > 0);
+				}
+
+				@Override public void onByteChunkSentProcessed(long totalProcessed, long totalLength)
+				{
+					Assert.assertTrue(totalProcessed >= 0);
+				}
+
+				@Override public void onFinish()
+				{
+					Assert.assertNotNull(getContent());
+
+					signal.countDown();
+				}
+			});
+
+		signal.await(1500, TimeUnit.SECONDS);
 	}
 
 	/**
