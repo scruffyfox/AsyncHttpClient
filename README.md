@@ -1,12 +1,14 @@
 #AsyncHttpClient by Callum Taylor
 
+[![Build Status](https://travis-ci.org/scruffyfox/AsyncHttpClient.svg?branch=develop)](https://travis-ci.org/scruffyfox/AsyncHttpClient)
+
 Follow me on [Twitter](http://twitter.com/scruffyfox) | [App.net](http://alpha.app.net/scruffyfox) | [Website](http://callumtaylor.net) | [Blog](http://blog.callumtaylor.net)
 
 This is the new and improved version of `AsyncHttpClient` taken from X-Library. It was long due a re-write.
 
 In this version it allows a more flexible usage of posting files, http entities and GZIP handling.
 
-The library uses Apache's HttpRequest library.
+The library uses Square's OKHTTP library.
 
 It consists of 2 different classes, `AsyncHttpClient` and `SyncHttpClient`. Obviously by the name, `AsyncHttpClient` is for asynchronous requests which uses the `AsyncTask` paradigm, and `SyncHttpClient` is for synchronous requests which should be handled **by yourself in a thread outside of the UI thread**.
 
@@ -14,7 +16,7 @@ It consists of 2 different classes, `AsyncHttpClient` and `SyncHttpClient`. Obvi
 
 Simply import the gradle file into Android Studio and reference the dependancy in your `settings.gradle` and project's `build.gradle`
 
-Alternatively you can add the maven dependancy `net.callumtaylor:asynchttpclient:1.5.1` **N.B. Do NOT use `net.callumtaylor.asynchttp` for the group ID. This is an old ID and will NOT be updated**
+Alternatively you can add the maven dependancy `net.callumtaylor:asynchttpclient:2.0` **N.B. Do NOT use `net.callumtaylor.asynchttp` for the group ID. This is an old ID and will NOT be updated**
 
 #Table of contents
 
@@ -36,7 +38,7 @@ Alternatively you can add the maven dependancy `net.callumtaylor:asynchttpclient
 #Other notes
 ###Downloading large files
 
-In order to download large files, you will need to subclass `AsyncHttpResponseHandler` and override the `onPublishedDownloadProgress()` method to write directly to cache instead of appending to a `ByteArrayOutputStream` which is what the standard `BinaryResponseHandler` does. This is to stop OOM due to a over-sized output stream.
+In order to download large files, you will need to subclass `AsyncHttpResponseHandler` and override the `onByteChunkReceived()` method to write directly to cache instead of appending to a `ByteArrayOutputStream` which is what the standard `BinaryResponseHandler` does. This is to stop OOM due to a over-sized output stream.
 
 ###AsyncHttpClient
 
@@ -44,7 +46,7 @@ In order to download large files, you will need to subclass `AsyncHttpResponseHa
 
 ###SyncHttpClient
 
-`SyncHttpClient` is a paramitized class which means the type you infer to it, is the type that gets returned when calling the method. When supplying a [Processor](https://github.com/scruffyfox/AsyncHttpClient/blob/v1.3/src/net/callumtaylor/asynchttp/processor/Processor.java), that processor must also paramitized with the same type as the `SyncHttpClient` instance.
+`SyncHttpClient` is a paramitized class which means the type you infer to it, is the type that gets returned when calling the method. When supplying a ResponseHandler, that ResponseHandler must also paramitized with the same type as the `SyncHttpClient` instance.
 
 You can also get the info of the request by calling your `SyncHttpClient` instance and `getConnectionInfo()`. This can only be called after the response has been completed.
 
@@ -52,3 +54,7 @@ You can also get the info of the request by calling your `SyncHttpClient` instan
 
 Because of the nature of REST, `GET` and `DELETE` requests behave in the same
 way, `POST` and `PUT` requests also behave in the same way.
+
+#License
+
+See [library/LICENSE](library/LICENSE)

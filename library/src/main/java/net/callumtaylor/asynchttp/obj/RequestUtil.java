@@ -1,11 +1,9 @@
 package net.callumtaylor.asynchttp.obj;
 
-import java.util.List;
-
-import org.apache.http.NameValuePair;
-
 import android.net.Uri;
 import android.os.Build;
+
+import java.util.List;
 
 public class RequestUtil
 {

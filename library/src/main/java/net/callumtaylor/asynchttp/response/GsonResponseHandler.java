@@ -3,36 +3,32 @@ package net.callumtaylor.asynchttp.response;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-public class GsonResponseHandler<T> extends ResponseHandler<T>
+import java.io.IOException;
+
+/**
+ * Gson response handler used for automatically parsing a response into objects using Gson and class types
+ * @param <T>
+ */
+public class GsonResponseHandler<T> extends StreamResponseHandler<T>
 {
 	private Class<T> outClass;
 	private T content;
-	private StringBuffer stringBuffer;
+	private Gson gson;
 
 	public GsonResponseHandler(Class<T> outClass)
 	{
-		this.outClass = outClass;
+		this(new Gson(), outClass);
 	}
 
-	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+	public GsonResponseHandler(GsonBuilder builder, Class<T> outClass)
 	{
-		if (stringBuffer == null)
-		{
-			int total = (int)(totalLength > Integer.MAX_VALUE ? Integer.MAX_VALUE : totalLength);
-			stringBuffer = new StringBuffer(Math.max(8192, total));
-		}
+		this(builder.create(), outClass);
+	}
 
-		if (chunk != null)
-		{
-			try
-			{
-				stringBuffer.append(new String(chunk, 0, chunkLength, "UTF-8"));
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
+	public GsonResponseHandler(Gson builder, Class<T> outClass)
+	{
+		this.outClass = outClass;
+		this.gson = builder;
 	}
 
 	/**
@@ -42,8 +38,7 @@ public class GsonResponseHandler<T> extends ResponseHandler<T>
 	{
 		try
 		{
-			Gson parser = new GsonBuilder().create();
-			this.content = parser.fromJson(stringBuffer.toString(), (Class<T>)outClass);
+			this.content = gson.fromJson(reader, (Class<T>)outClass);
 		}
 		catch (Exception e)
 		{
@@ -57,7 +52,14 @@ public class GsonResponseHandler<T> extends ResponseHandler<T>
 			}
 		}
 
-		this.stringBuffer = null;
+		try
+		{
+			reader.close();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 
