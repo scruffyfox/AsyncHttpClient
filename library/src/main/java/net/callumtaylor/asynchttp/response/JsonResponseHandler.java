@@ -3,39 +3,32 @@ package net.callumtaylor.asynchttp.response;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
-public class JsonResponseHandler extends ResponseHandler<JsonElement>
+import java.io.IOException;
+
+/**
+ * Basic Json response handler using the Gson library.
+ *
+ * * This is <b>not</b> the same as {@link JSONArrayResponseHandler} and {@link JSONObjectResponseHandler}
+ */
+public class JsonResponseHandler extends StreamResponseHandler<JsonElement>
 {
-	private StringBuffer stringBuffer;
 	private JsonElement content;
-
-	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
-	{
-		if (stringBuffer == null)
-		{
-			int total = (int)(totalLength > Integer.MAX_VALUE ? Integer.MAX_VALUE : totalLength);
-			stringBuffer = new StringBuffer(Math.max(8192, total));
-		}
-
-		if (chunk != null)
-		{
-			try
-			{
-				stringBuffer.append(new String(chunk, 0, chunkLength, "UTF-8"));
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
-	}
 
 	/**
 	 * Generate the json object from the buffer and remove it to allow the GC to clean up properly
 	 */
 	@Override public void generateContent()
 	{
-		this.content = new JsonParser().parse(stringBuffer.toString());
-		this.stringBuffer = null;
+		this.content = new JsonParser().parse(reader);
+
+		try
+		{
+			reader.close();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	/**

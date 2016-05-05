@@ -1,11 +1,14 @@
 package net.callumtaylor.asynchttp.response;
 
+/**
+ * Basic string response handler. Useful for parsing non-binary responses into any format
+ */
 public class StringResponseHandler extends ResponseHandler<String>
 {
 	private StringBuffer stringBuffer;
 	private String content;
 
-	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+	@Override public void onByteChunkReceived(byte[] chunk, long chunkLength, long totalProcessed, long totalLength)
 	{
 		if (stringBuffer == null)
 		{
@@ -17,7 +20,7 @@ public class StringResponseHandler extends ResponseHandler<String>
 		{
 			try
 			{
-				stringBuffer.append(new String(chunk, 0, chunkLength, "UTF-8"));
+				stringBuffer.append(new String(chunk, 0, (int)chunkLength, "UTF-8"));
 			}
 			catch (Exception e)
 			{

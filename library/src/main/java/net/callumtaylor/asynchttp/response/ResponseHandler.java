@@ -1,6 +1,11 @@
 package net.callumtaylor.asynchttp.response;
 
-import net.callumtaylor.asynchttp.AsyncHttpClient.ClientExecutorTask;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.annotation.UiThread;
+import android.support.annotation.WorkerThread;
+
+import net.callumtaylor.asynchttp.obj.ClientTaskImpl;
 import net.callumtaylor.asynchttp.obj.ConnectionInfo;
 import net.callumtaylor.asynchttp.obj.Packet;
 
@@ -12,11 +17,11 @@ import java.net.SocketTimeoutException;
  * flow is as follows:
  *
  * <pre>
- * onSend -> onPublishedUploadProgress -> onPublishedDownloadProgress -> beforeCallback -> onSuccess/onFailure -> beforeFinish -> onFinish
+ * onSend -&gt; onByteChunkSent -&gt; onByteChunkReceived -&gt; beforeResponse -&gt; onSuccess/onFailure -&gt; beforeFinish -&gt; onFinish
  * </pre>
  *
- * {@link ResponseHandler#onPublishedDownloadProgress}, {@link ResponseHandler#onPublishedUploadProgress},
- * {@link ResponseHandler#beforeCallback}, {@link ResponseHandler#onSuccess}, and {@link ResponseHandler#onFailure} all run in
+ * {@link ResponseHandler#onByteChunkReceived}, {@link ResponseHandler#onByteChunkSent},
+ * {@link ResponseHandler#beforeResponse}, {@link ResponseHandler#onSuccess}, and {@link ResponseHandler#onFailure} all run in
  * the background thread. All your processing should be handled in one of those
  * 4 methods and then either call to run on UI thread a new runnable, or handle
  * in {@link ResponseHandler#onFinish} which runs on the UI thread
@@ -37,19 +42,20 @@ public abstract class ResponseHandler<E>
 	/**
 	 * Called when the connection is first made
 	 */
+	@WorkerThread
 	public void onSend(){}
 
 	/**
 	 * Called when processing the response from a stream. Use this to override
 	 * the processing of the InputStream to handle the response differently.
 	 * Default is to read the response as a byte-array which gets passed, chunk
-	 * by chunk, to {@link ResponseHandler#onPublishedDownloadProgress}
+	 * by chunk, to {@link ResponseHandler#onByteChunkReceived}
 	 *
 	 * @param stream
 	 *            The response InputStream
 	 * @param client
 	 *            The client task. In order to call
-	 *            {@link ResponseHandler#onPublishedDownloadProgressUI}, you must call
+	 *            {@link ResponseHandler#onByteChunkReceivedProcessed}, you must call
 	 *            <code>client.postPublishProgress(new Packet(int readCount, int totalLength, boolean isDownload))</code>
 	 *            This is required when displaying a progress indicator.
 	 * @param totalLength
@@ -57,18 +63,18 @@ public abstract class ResponseHandler<E>
 	 * @throws SocketTimeoutException
 	 * @throws Exception
 	 */
-	public void onBeginPublishedDownloadProgress(InputStream stream, ClientExecutorTask client, long totalLength) throws SocketTimeoutException, Exception
+	@WorkerThread
+	public void onReceiveStream(InputStream stream, ClientTaskImpl client, long totalLength) throws SocketTimeoutException, Exception
 	{
-		byte[] buffer = new byte[8196];
+		byte[] buffer = new byte[8192];
 
 		int len = 0;
 		int readCount = 0;
 		while ((len = stream.read(buffer)) > -1 && !client.isCancelled())
 		{
-			onPublishedDownloadProgress(buffer, len, totalLength);
-			onPublishedDownloadProgress(buffer, len, readCount, totalLength);
+			onByteChunkReceived(buffer, len, readCount, totalLength);
 
-			client.postPublishProgress(new Packet(readCount, totalLength, true));
+			client.transferProgress(new Packet(readCount, totalLength, true));
 
 			readCount += len;
 		}
@@ -78,10 +84,9 @@ public abstract class ResponseHandler<E>
 			getConnectionInfo().responseLength = readCount;
 
 			// we fake the content length, because it can be -1
-			onPublishedDownloadProgress(null, readCount, readCount);
-			onPublishedDownloadProgress(null, readCount, readCount, readCount);
+			onByteChunkReceived(null, readCount, readCount, readCount);
 
-			client.postPublishProgress(new Packet(readCount, totalLength, true));
+			client.transferProgress(new Packet(readCount, totalLength, true));
 		}
 
 		stream.close();
@@ -96,28 +101,14 @@ public abstract class ResponseHandler<E>
 	 *            The chunk of data. This will be the <b>null</b> after the total amount has been downloaded.
 	 * @param chunkLength
 	 *            The length of the chunk
-	 * @param totalLength
-	 *            The total size of the request. <b>note:</b> This <i>can</i> be
-	 *            -1 during download.
-	 */
-	public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalLength){}
-
-	/**
-	 * Called when a chunk has been downloaded from the request. This will be
-	 * called once every chunk request, and once extra when all the content is
-	 * downloaded.
-	 *
-	 * @param chunk
-	 *            The chunk of data. This will be the <b>null</b> after the total amount has been downloaded.
-	 * @param chunkLength
-	 *            The length of the chunk
 	 * @param totalProcessed
 	 *            The total amount of data processed from the request.
 	 * @param totalLength
 	 *            The total size of the request. <b>note:</b> This <i>can</i> be
 	 *            -1 during download.
 	 */
-	public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength){}
+	@WorkerThread
+	public void onByteChunkReceived(@Nullable byte[] chunk, long chunkLength, long totalProcessed, long totalLength){}
 
 	/**
 	 * Runs on the UI thread. Useful for updating progress bars.
@@ -127,29 +118,13 @@ public abstract class ResponseHandler<E>
 	 * @param totalLength
 	 *            The total length of the request
 	 */
-	public void onPublishedDownloadProgressUI(long totalProcessed, long totalLength){}
+	@UiThread
+	public void onByteChunkReceivedProcessed(long totalProcessed, long totalLength){}
 
 	/**
 	 * Called when a chunk has been uploaded to the request. This will be
 	 * called once every chunk request
 	 *
-	 * @param chunk
-	 *            will be the total byte array when this is called.
-	 * @param chunk
-	 *            The chunk of data
-	 * @param chunkLength
-	 *            The length of the chunk
-	 * @param totalLength
-	 *            The total size of the request.
-	 */
-	public void onPublishedUploadProgress(byte[] chunk, int chunkLength, long totalLength){}
-
-	/**
-	 * Called when a chunk has been uploaded to the request. This will be
-	 * called once every chunk request
-	 *
-	 * @param chunk
-	 *            will be the total byte array when this is called.
 	 * @param chunk
 	 *            The chunk of data
 	 * @param chunkLength
@@ -159,7 +134,8 @@ public abstract class ResponseHandler<E>
 	 * @param totalLength
 	 *            The total size of the request.
 	 */
-	public void onPublishedUploadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength){}
+	@WorkerThread
+	public void onByteChunkSent(@NonNull byte[] chunk, long chunkLength, long totalProcessed, long totalLength){}
 
 	/**
 	 * Runs on the UI thread. Useful for updating progress bars.
@@ -169,19 +145,22 @@ public abstract class ResponseHandler<E>
 	 * @param totalLength
 	 *            The total length of the request
 	 */
-	public void onPublishedUploadProgressUI(long totalProcessed, long totalLength){}
+	@UiThread
+	public void onByteChunkSentProcessed(long totalProcessed, long totalLength){}
 
 	/**
 	 * Called just before {@link ResponseHandler#onSuccess}
 	 */
-	public void beforeCallback(){}
+	@WorkerThread
+	public void beforeResponse(){}
 
 	/**
 	 * Override this method to efficiently generate your content from any buffers you have have
 	 * used.
 	 *
-	 * This is called directly after {@link ResponseHandler#onBeginPublishedDownloadProgress} has finished
+	 * This is called directly after {@link ResponseHandler#onReceiveStream} has finished
 	 */
+	@WorkerThread
 	public abstract void generateContent();
 
 	/**
@@ -192,39 +171,31 @@ public abstract class ResponseHandler<E>
 	 *
 	 * @return The generated content object
 	 */
+	@Nullable
 	public abstract E getContent();
 
 	/**
 	 * Processes the response from the stream.
 	 * This is <b>not</b> ran on the UI thread
-	 *
-	 * @return The modified data set, or null
 	 */
+	@WorkerThread
 	public void onSuccess(){}
 
 	/**
 	 * Called when a response was not 2xx.
-	 *
-	 * @return The modified data set, or null
 	 */
+	@WorkerThread
 	public void onFailure(){}
 
 	/**
 	 * Called before {@link ResponseHandler#onFinish}
 	 */
+	@WorkerThread
 	public void beforeFinish(){}
 
 	/**
-	 * Called when the streams have all finished, success or not
+	 * Called when the streams have all finished, success or not. This is called on the UI Thread
 	 */
+	@UiThread
 	public void onFinish(){}
-
-	/**
-	 * Called when the streams have all finished, success or not
-	 *
-	 * @param failed
-	 *            If the stream failed or not. Useful to display any UI updates
-	 *            here.
-	 */
-	public void onFinish(boolean failed){}
 }

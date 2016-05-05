@@ -3,36 +3,33 @@ package net.callumtaylor.asynchttp.response;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-public class GsonResponseHandler<T> extends ResponseHandler<T>
-{
-	private Class<T> outClass;
-	private T content;
-	private StringBuffer stringBuffer;
+import java.io.IOException;
+import java.lang.reflect.Type;
 
-	public GsonResponseHandler(Class<T> outClass)
+/**
+ * Gson response handler used for automatically parsing a response into objects using Gson and class types
+ * @param <T>
+ */
+public class GsonResponseHandler<T> extends StreamResponseHandler<T>
+{
+	private Type outClass;
+	private T content;
+	private Gson gson;
+
+	public GsonResponseHandler(Type outClass)
 	{
-		this.outClass = outClass;
+		this(new Gson(), outClass);
 	}
 
-	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+	public GsonResponseHandler(GsonBuilder builder, Type outClass)
 	{
-		if (stringBuffer == null)
-		{
-			int total = (int)(totalLength > Integer.MAX_VALUE ? Integer.MAX_VALUE : totalLength);
-			stringBuffer = new StringBuffer(Math.max(8192, total));
-		}
+		this(builder.create(), outClass);
+	}
 
-		if (chunk != null)
-		{
-			try
-			{
-				stringBuffer.append(new String(chunk, 0, chunkLength, "UTF-8"));
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
+	public GsonResponseHandler(Gson builder, Type outClass)
+	{
+		this.outClass = outClass;
+		this.gson = builder;
 	}
 
 	/**
@@ -42,8 +39,7 @@ public class GsonResponseHandler<T> extends ResponseHandler<T>
 	{
 		try
 		{
-			Gson parser = new GsonBuilder().create();
-			this.content = parser.fromJson(stringBuffer.toString(), (Class<T>)outClass);
+			this.content = gson.fromJson(reader, outClass);
 		}
 		catch (Exception e)
 		{
@@ -57,7 +53,14 @@ public class GsonResponseHandler<T> extends ResponseHandler<T>
 			}
 		}
 
-		this.stringBuffer = null;
+		try
+		{
+			reader.close();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 

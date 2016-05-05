@@ -31,13 +31,13 @@ public class CacheResponseHandler extends ResponseHandler<File>
 		catch (Exception e){}
 	}
 
-	@Override public void onPublishedDownloadProgress(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+	@Override public void onByteChunkReceived(byte[] chunk, long chunkLength, long totalProcessed, long totalLength)
 	{
 		if (chunk != null && fos != null)
 		{
 			try
 			{
-				fos.write(chunk, 0, chunkLength);
+				fos.write(chunk, 0, (int)chunkLength);
 			}
 			catch (Exception e){}
 		}
