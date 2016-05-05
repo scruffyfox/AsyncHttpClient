@@ -257,6 +257,16 @@ public class AsyncHttpClient
 	/**
 	 * Performs a OPTIONS request on the baseUri
 	 * @param params The Query params to append to the baseUri
+	 * @param response The response handler for the request
+	 */
+	public void options(@Nullable List<NameValuePair> params, @Nullable ResponseHandler response)
+	{
+		options("", params, null, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
@@ -273,6 +283,17 @@ public class AsyncHttpClient
 	public void options(String path, @Nullable List<NameValuePair> params, @Nullable ResponseHandler response)
 	{
 		options(path, params, null, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void options(String path, @Nullable Headers headers, @Nullable ResponseHandler response)
+	{
+		options(path, null, headers, response);
 	}
 
 	/**
@@ -325,6 +346,16 @@ public class AsyncHttpClient
 	/**
 	 * Performs a HEAD request on the baseUri
 	 * @param params The Query params to append to the baseUri
+	 * @param response The response handler for the request
+	 */
+	public void head(@Nullable List<NameValuePair> params, @Nullable ResponseHandler response)
+	{
+		head("", params, null, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
@@ -341,6 +372,17 @@ public class AsyncHttpClient
 	public void head(String path, @Nullable List<NameValuePair> params, @Nullable ResponseHandler response)
 	{
 		head(path, params, null, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void head(String path, @Nullable Headers headers, @Nullable ResponseHandler response)
+	{
+		head(path, null, headers, response);
 	}
 
 	/**
@@ -378,6 +420,16 @@ public class AsyncHttpClient
 	public void delete(String path, @Nullable ResponseHandler response)
 	{
 		delete(path, null, null, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void delete(@Nullable Headers headers, @Nullable ResponseHandler response)
+	{
+		delete("", null, null, headers, response);
 	}
 
 	/**
@@ -442,6 +494,17 @@ public class AsyncHttpClient
 	public void delete(String path, @Nullable List<NameValuePair> params, @Nullable ResponseHandler response)
 	{
 		delete(path, params, null, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void delete(String path, @Nullable Headers headers, @Nullable ResponseHandler response)
+	{
+		delete(path, null, null, headers, response);
 	}
 
 	/**
@@ -541,6 +604,16 @@ public class AsyncHttpClient
 
 	/**
 	 * Performs a POST request on the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void post(@Nullable Headers headers, @Nullable ResponseHandler response)
+	{
+		post("", null, null, headers, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
@@ -591,6 +664,17 @@ public class AsyncHttpClient
 	public void post(String path, @Nullable List<NameValuePair> params, @Nullable ResponseHandler response)
 	{
 		post(path, params, null, null, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void post(String path, @Nullable Headers headers, @Nullable ResponseHandler response)
+	{
+		post(path, null, null, headers, response);
 	}
 
 	/**
@@ -690,6 +774,16 @@ public class AsyncHttpClient
 
 	/**
 	 * Performs a PUT request on the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void put(@Nullable Headers headers, @Nullable ResponseHandler response)
+	{
+		put("", null, null, headers, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
@@ -740,6 +834,17 @@ public class AsyncHttpClient
 	public void put(String path, @Nullable List<NameValuePair> params, @Nullable ResponseHandler response)
 	{
 		put(path, params, null, null, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void put(String path, @Nullable Headers headers, @Nullable ResponseHandler response)
+	{
+		put(path, null, null, headers, response);
 	}
 
 	/**
@@ -839,6 +944,16 @@ public class AsyncHttpClient
 
 	/**
 	 * Performs a PATCH request on the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void patch(@Nullable Headers headers, @Nullable ResponseHandler response)
+	{
+		patch("", null, null, headers, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
@@ -889,6 +1004,17 @@ public class AsyncHttpClient
 	public void patch(String path, @Nullable List<NameValuePair> params, @Nullable ResponseHandler response)
 	{
 		patch(path, params, null, null, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void patch(String path, @Nullable Headers headers, @Nullable ResponseHandler response)
+	{
+		patch(path, null, null, headers, response);
 	}
 
 	/**

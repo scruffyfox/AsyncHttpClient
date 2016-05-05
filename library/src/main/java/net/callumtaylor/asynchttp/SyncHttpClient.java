@@ -282,6 +282,17 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
+	public E get(@Nullable List<NameValuePair> params,  @NonNull ResponseHandler<?> response)
+	{
+		return get("", params, null, response);
+	}
+
+	/**
+	 * Performs a GET request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
 	public E get(@Nullable List<NameValuePair> params, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
 	{
 		return get("", params, headers, response);
@@ -296,6 +307,17 @@ public class SyncHttpClient<E>
 	public E get(String path, @Nullable List<NameValuePair> params, @NonNull ResponseHandler<?> response)
 	{
 		return get(path, params, null, response);
+	}
+
+	/**
+	 * Performs a GET request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E get(String path, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	{
+		return get(path, null, headers, response);
 	}
 
 	/**
@@ -352,6 +374,16 @@ public class SyncHttpClient<E>
 	public E options(@Nullable Headers headers, @NonNull ResponseHandler<?> response)
 	{
 		return options("", null, headers, response);
+	}
+
+	/**
+	 * Performs a OPTIONS request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param response The response handler for the request
+	 */
+	public E options(@Nullable List<NameValuePair> params, @NonNull ResponseHandler<?> response)
+	{
+		return options("", params, null, response);
 	}
 
 	/**
@@ -435,6 +467,16 @@ public class SyncHttpClient<E>
 	/**
 	 * Performs a HEAD request on the baseUri
 	 * @param params The Query params to append to the baseUri
+	 * @param response The response handler for the request
+	 */
+	public E head(@Nullable List<NameValuePair> params, @NonNull ResponseHandler<?> response)
+	{
+		return head("", params, null, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
@@ -452,6 +494,17 @@ public class SyncHttpClient<E>
 	public E head(String path, @Nullable List<NameValuePair> params, @NonNull ResponseHandler<?> response)
 	{
 		return head(path, params, null, response);
+	}
+
+	/**
+	 * Performs a HEAD request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E head(String path, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	{
+		return head(path, null, headers, response);
 	}
 
 	/**
@@ -513,6 +566,16 @@ public class SyncHttpClient<E>
 	/**
 	 * Performs a DELETE request on the baseUri
 	 * @param params The Query params to append to the baseUri
+	 * @param response The response handler for the request
+	 */
+	public E delete(@Nullable List<NameValuePair> params, @NonNull ResponseHandler<?> response)
+	{
+		return delete("", params, null, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
@@ -530,6 +593,17 @@ public class SyncHttpClient<E>
 	public E delete(String path, @Nullable List<NameValuePair> params, @NonNull ResponseHandler<?> response)
 	{
 		return delete(path, params, null, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E delete(String path, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	{
+		return delete(path, null, null, headers, response);
 	}
 
 	/**
@@ -556,9 +630,20 @@ public class SyncHttpClient<E>
 	 * @param deleteData The delete data entity to delete to the server
 	 * @param response The response handler for the request
 	 */
-	public E delete(@Nullable List<NameValuePair> params, RequestBody deleteData, @NonNull ResponseHandler<?> response)
+	public E delete(@Nullable List<NameValuePair> params, @Nullable RequestBody deleteData, @NonNull ResponseHandler<?> response)
 	{
 		return delete("", params, deleteData, null, response);
+	}
+
+	/**
+	 * Performs a DELETE request on the baseUri
+	 * @param deleteData The delete data entity to delete to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E delete(RequestBody deleteData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	{
+		return delete("", null, deleteData, headers, response);
 	}
 
 	/**
@@ -567,7 +652,7 @@ public class SyncHttpClient<E>
 	 * @param deleteData The delete data entity to delete to the server
 	 * @param response The response handler for the request
 	 */
-	public E delete(String path, RequestBody deleteData, @NonNull ResponseHandler<?> response)
+	public E delete(String path, @Nullable RequestBody deleteData, @NonNull ResponseHandler<?> response)
 	{
 		return delete(path, null, deleteData, null, response);
 	}
@@ -579,7 +664,7 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E delete(String path, RequestBody deleteData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	public E delete(String path, @Nullable RequestBody deleteData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
 	{
 		return delete(path, null, deleteData, headers, response);
 	}
@@ -591,7 +676,7 @@ public class SyncHttpClient<E>
 	 * @param deleteData The delete data entity to delete to the server
 	 * @param response The response handler for the request
 	 */
-	public E delete(String path, @Nullable List<NameValuePair> params, RequestBody deleteData, @NonNull ResponseHandler<?> response)
+	public E delete(String path, @Nullable List<NameValuePair> params, @Nullable RequestBody deleteData, @NonNull ResponseHandler<?> response)
 	{
 		return delete(path, params, deleteData, null, response);
 	}
@@ -604,7 +689,7 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E delete(String path, @Nullable List<NameValuePair> params, RequestBody deleteData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	public E delete(String path, @Nullable List<NameValuePair> params, @Nullable RequestBody deleteData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -655,6 +740,16 @@ public class SyncHttpClient<E>
 
 	/**
 	 * Performs a POST request on the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E post(@Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	{
+		return post("", null, null, headers, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
@@ -691,9 +786,21 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E post(@Nullable List<NameValuePair> params, RequestBody postData, @NonNull ResponseHandler<?> response)
+	public E post(@Nullable List<NameValuePair> params, @Nullable RequestBody postData, @NonNull ResponseHandler<?> response)
 	{
 		return post("", params, postData, null, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
+	 * @param params The Query params to append to the baseUri
+	 * @param postData The post data entity to post to the server
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E post(@Nullable List<NameValuePair> params, @Nullable RequestBody postData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	{
+		return post("", params, postData, headers, response);
 	}
 
 	/**
@@ -705,6 +812,17 @@ public class SyncHttpClient<E>
 	public E post(String path, @Nullable List<NameValuePair> params, @NonNull ResponseHandler<?> response)
 	{
 		return post(path, params, null, null, response);
+	}
+
+	/**
+	 * Performs a POST request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E post(String path, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	{
+		return post(path, null, null, headers, response);
 	}
 
 	/**
@@ -725,7 +843,7 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E post(String path, RequestBody postData, @NonNull ResponseHandler<?> response)
+	public E post(String path, @Nullable RequestBody postData, @NonNull ResponseHandler<?> response)
 	{
 		return post(path, null, postData, null, response);
 	}
@@ -737,7 +855,7 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E post(String path, RequestBody postData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	public E post(String path, @Nullable RequestBody postData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
 	{
 		return post(path, null, postData, headers, response);
 	}
@@ -749,7 +867,7 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E post(String path, @Nullable List<NameValuePair> params, RequestBody postData, @NonNull ResponseHandler<?> response)
+	public E post(String path, @Nullable List<NameValuePair> params, @Nullable RequestBody postData, @NonNull ResponseHandler<?> response)
 	{
 		return post(path, params, postData, null, response);
 	}
@@ -762,7 +880,7 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E post(String path, @Nullable List<NameValuePair> params, RequestBody postData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	public E post(String path, @Nullable List<NameValuePair> params, @Nullable RequestBody postData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -813,6 +931,16 @@ public class SyncHttpClient<E>
 
 	/**
 	 * Performs a PUT request on the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E put(@Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	{
+		return put("", null, null, headers, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
@@ -849,7 +977,7 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E put(@Nullable List<NameValuePair> params, RequestBody postData, @NonNull ResponseHandler<?> response)
+	public E put(@Nullable List<NameValuePair> params, @Nullable RequestBody postData, @NonNull ResponseHandler<?> response)
 	{
 		return put("", params, postData, null, response);
 	}
@@ -863,6 +991,17 @@ public class SyncHttpClient<E>
 	public E put(String path, @Nullable List<NameValuePair> params, @NonNull ResponseHandler<?> response)
 	{
 		return put(path, params, null, null, response);
+	}
+
+	/**
+	 * Performs a PUT request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E put(String path, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	{
+		return put(path, null, null, headers, response);
 	}
 
 	/**
@@ -883,7 +1022,7 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E put(String path, RequestBody postData, @NonNull ResponseHandler<?> response)
+	public E put(String path, @Nullable RequestBody postData, @NonNull ResponseHandler<?> response)
 	{
 		return put(path, null, postData, null, response);
 	}
@@ -895,7 +1034,7 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E put(String path, RequestBody postData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	public E put(String path, @Nullable RequestBody postData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
 	{
 		return put(path, null, postData, headers, response);
 	}
@@ -907,7 +1046,7 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E put(String path, @Nullable List<NameValuePair> params, RequestBody postData, @NonNull ResponseHandler<?> response)
+	public E put(String path, @Nullable List<NameValuePair> params, @Nullable RequestBody postData, @NonNull ResponseHandler<?> response)
 	{
 		return put(path, params, postData, null, response);
 	}
@@ -920,7 +1059,7 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E put(String path, @Nullable List<NameValuePair> params, RequestBody postData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	public E put(String path, @Nullable List<NameValuePair> params, @Nullable RequestBody postData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -971,6 +1110,16 @@ public class SyncHttpClient<E>
 
 	/**
 	 * Performs a PATCH request on the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E patch(@Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	{
+		return patch("", null, null, headers, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
@@ -1007,7 +1156,7 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E patch(@Nullable List<NameValuePair> params, RequestBody postData, @NonNull ResponseHandler<?> response)
+	public E patch(@Nullable List<NameValuePair> params, @Nullable RequestBody postData, @NonNull ResponseHandler<?> response)
 	{
 		return patch("", params, postData, null, response);
 	}
@@ -1021,6 +1170,17 @@ public class SyncHttpClient<E>
 	public E patch(String path, @Nullable List<NameValuePair> params, @NonNull ResponseHandler<?> response)
 	{
 		return patch(path, params, null, null, response);
+	}
+
+	/**
+	 * Performs a PATCH request on the baseUri
+	 * @param path The path extended from the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public E patch(String path, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	{
+		return patch(path, null, null, headers, response);
 	}
 
 	/**
@@ -1041,7 +1201,7 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E patch(String path, RequestBody postData, @NonNull ResponseHandler<?> response)
+	public E patch(String path, @Nullable RequestBody postData, @NonNull ResponseHandler<?> response)
 	{
 		return patch(path, null, postData, null, response);
 	}
@@ -1053,7 +1213,7 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E patch(String path, RequestBody postData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	public E patch(String path, @Nullable RequestBody postData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
 	{
 		return patch(path, null, postData, headers, response);
 	}
@@ -1065,7 +1225,7 @@ public class SyncHttpClient<E>
 	 * @param postData The post data entity to post to the server
 	 * @param response The response handler for the request
 	 */
-	public E patch(String path, @Nullable List<NameValuePair> params, RequestBody postData, @NonNull ResponseHandler<?> response)
+	public E patch(String path, @Nullable List<NameValuePair> params, @Nullable RequestBody postData, @NonNull ResponseHandler<?> response)
 	{
 		return patch(path, params, postData, null, response);
 	}
@@ -1078,7 +1238,7 @@ public class SyncHttpClient<E>
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
 	 */
-	public E patch(String path, @Nullable List<NameValuePair> params, RequestBody postData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
+	public E patch(String path, @Nullable List<NameValuePair> params, @Nullable RequestBody postData, @Nullable Headers headers, @NonNull ResponseHandler<?> response)
 	{
 		if (!TextUtils.isEmpty(path))
 		{
@@ -1089,7 +1249,7 @@ public class SyncHttpClient<E>
 		return executeTask(RequestMode.PATCH, requestUri, headers, postData, response);
 	}
 
-	private E executeTask(RequestMode mode, Uri uri, @Nullable Headers headers, RequestBody sendData, ResponseHandler<?> requestProcessor)
+	private E executeTask(RequestMode mode, Uri uri, @Nullable Headers headers, @Nullable RequestBody sendData, ResponseHandler<?> requestProcessor)
 	{
 		if (headers == null)
 		{
