@@ -17,7 +17,7 @@ import java.net.SocketTimeoutException;
  * flow is as follows:
  *
  * <pre>
- * onSend -> onByteChunkSent -> onByteChunkReceived -> beforeResponse -> onSuccess/onFailure -> beforeFinish -> onFinish
+ * onSend -&gt; onByteChunkSent -&gt; onByteChunkReceived -&gt; beforeResponse -&gt; onSuccess/onFailure -&gt; beforeFinish -&gt; onFinish
  * </pre>
  *
  * {@link ResponseHandler#onByteChunkReceived}, {@link ResponseHandler#onByteChunkSent},

@@ -43,9 +43,9 @@ import okhttp3.RequestBody;
  * </ul>
  *
  * The library uses OKHttp for its HTTP request client so follows the same patterns for request bodies and headers.
- * <p />
+ * <p>
  * Example GET
- * <code>
+ * <pre>
  	new AsyncHttpClient("http://httpbin.org/")
 		.get("get", new JsonResponseHandler()
 		{
@@ -54,10 +54,10 @@ import okhttp3.RequestBody;
 
 			}
 		});
- * </code>
- * <p />
+ * </pre>
+ * <p>
  * Example POST
- * <code>
+ * <pre>
  	RequestBody postBody = RequestBody.create(MediaType.parse("application/json"), "{\"test\":\"hello world\"}");
 
 	new AsyncHttpClient("http://httpbin.org/")
@@ -68,10 +68,10 @@ import okhttp3.RequestBody;
 
 			}
 		});
- * </code>
- * <p />
+ * </pre>
+ * <p>
  * Example progress for large content respose/post
- * <code>
+ * <pre>
 	RequestBody postBody = MultipartBody.create(MediaType.parse("application/octet-stream"), new byte[1024 * 12]);
 
 	new AsyncHttpClient("http://httpbin.org/")
@@ -87,7 +87,7 @@ import okhttp3.RequestBody;
 
 			}
 		});
- * </code>
+ * </pre>
  *
  * Because of the nature of REST, GET and DELETE requests behave in the same
  * way, POST and PUT requests also behave in the same way.
