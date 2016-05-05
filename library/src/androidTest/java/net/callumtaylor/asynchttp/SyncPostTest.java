@@ -1,0 +1,90 @@
+package net.callumtaylor.asynchttp;
+
+import android.test.AndroidTestCase;
+
+import com.google.gson.JsonElement;
+
+import junit.framework.Assert;
+
+import net.callumtaylor.asynchttp.response.JsonResponseHandler;
+import net.callumtaylor.asynchttp.response.StringResponseHandler;
+
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
+
+/**
+ * @author Callum Taylor
+ */
+public class SyncPostTest extends AndroidTestCase
+{
+	@Override protected void setUp() throws Exception
+	{
+		super.setUp();
+	}
+
+	/**
+	 * Tests a basic POST request
+	 * @throws InterruptedException
+	 */
+	public void testPost() throws InterruptedException
+	{
+		JsonElement response = new SyncHttpClient<JsonElement>("http://httpbin.org/")
+			.post("post", new JsonResponseHandler());
+
+		Assert.assertNotNull(response);
+	}
+
+	/**
+	 * Tests response parses correctly from json
+	 * @throws InterruptedException
+	 */
+	public void testPostJson() throws InterruptedException
+	{
+		RequestBody postBody = RequestBody.create(MediaType.parse("application/json"), "{\"test\":\"hello world\"}");
+
+		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
+		JsonElement response = client.post("post", postBody, new JsonResponseHandler());
+
+		Assert.assertNotNull(response);
+	}
+
+	/**
+	 * Tests 404 response
+	 * @throws InterruptedException
+	 */
+	public void testPost404() throws InterruptedException
+	{
+		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
+		JsonElement response = client.post("status/404", new JsonResponseHandler());
+
+		Assert.assertNull(response);
+		Assert.assertEquals(client.getConnectionInfo().responseCode, 404);
+	}
+
+	/**
+	 * Tests auto 302 redirect
+	 * @throws InterruptedException
+	 */
+	public void testPostRedirectJson() throws InterruptedException
+	{
+		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
+		client.setAllowRedirect(true);
+		JsonElement response = client.post("absolute-redirect/1", new JsonResponseHandler());
+
+		Assert.assertNotNull(response);
+		Assert.assertEquals(client.getConnectionInfo().responseCode, 200);
+	}
+
+	/**
+	 * Tests no 302 redirect
+	 * @throws InterruptedException
+	 */
+	public void testPostNoRedirect() throws InterruptedException
+	{
+		SyncHttpClient<String> client = new SyncHttpClient<>("http://httpbin.org/");
+		client.setAllowRedirect(false);
+		String response = client.post("status/302", new StringResponseHandler());
+
+		Assert.assertEquals(client.getConnectionInfo().responseCode, 302);
+	}
+}
