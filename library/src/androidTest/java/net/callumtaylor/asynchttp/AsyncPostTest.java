@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 
 import junit.framework.Assert;
 
+import net.callumtaylor.asynchttp.response.BasicResponseHandler;
 import net.callumtaylor.asynchttp.response.JsonResponseHandler;
 
 import java.util.concurrent.CountDownLatch;
@@ -44,7 +45,7 @@ public class AsyncPostTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -68,13 +69,13 @@ public class AsyncPostTest extends AndroidTestCase
 				{
 					Assert.assertNotNull(chunk);
 					Assert.assertTrue(chunkLength > 0);
-					Assert.assertEquals(totalLength, 16384);
+					Assert.assertEquals(16384, totalLength);
 				}
 
 				@Override public void onByteChunkSentProcessed(long totalProcessed, long totalLength)
 				{
 					Assert.assertTrue(totalProcessed >= 0);
-					Assert.assertEquals(totalLength, 16384);
+					Assert.assertEquals(16384, totalLength);
 				}
 
 				@Override public void onFinish()
@@ -85,7 +86,7 @@ public class AsyncPostTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -108,7 +109,7 @@ public class AsyncPostTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -123,13 +124,13 @@ public class AsyncPostTest extends AndroidTestCase
 				@Override public void onFinish()
 				{
 					Assert.assertNull(getContent());
-					Assert.assertEquals(getConnectionInfo().responseCode, 404);
+					Assert.assertEquals(404, getConnectionInfo().responseCode);
 
 					signal.countDown();
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -152,6 +153,50 @@ public class AsyncPostTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
+	}
+
+	/**
+	 * Tests auto 302 redirect
+	 * @throws InterruptedException
+	 */
+	public void testPostRedirectJson() throws InterruptedException
+	{
+		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
+		client.setAllowRedirect(true);
+		client.post("status/302", new JsonResponseHandler()
+		{
+			@Override public void onFinish()
+			{
+				Assert.assertNotNull(getContent());
+				Assert.assertTrue(getContent() instanceof JsonElement);
+				Assert.assertEquals(200, getConnectionInfo().responseCode);
+
+				signal.countDown();
+			}
+		});
+
+		signal.await(1500, TimeUnit.MILLISECONDS);
+	}
+
+	/**
+	 * Tests no 302 redirect
+	 * @throws InterruptedException
+	 */
+	public void testPostNoRedirect() throws InterruptedException
+	{
+		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
+		client.setAllowRedirect(false);
+		client.post("status/302", new BasicResponseHandler()
+		{
+			@Override public void onFinish()
+			{
+				Assert.assertEquals(302, getConnectionInfo().responseCode);
+
+				signal.countDown();
+			}
+		});
+
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 }

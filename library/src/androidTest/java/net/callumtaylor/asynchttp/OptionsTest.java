@@ -39,7 +39,7 @@ public class OptionsTest extends AndroidTestCase
 			.get("user-agent", new JsonResponseHandler());
 
 		Assert.assertNotNull(response);
-		Assert.assertEquals(response.getAsJsonObject().get("user-agent").getAsString(), "custom-user-agent");
+		Assert.assertEquals("custom-user-agent", response.getAsJsonObject().get("user-agent").getAsString());
 	}
 
 	/**
@@ -56,7 +56,7 @@ public class OptionsTest extends AndroidTestCase
 				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
-					Assert.assertEquals(getContent().getAsJsonObject().get("user-agent").getAsString(), "custom-user-agent");
+					Assert.assertEquals("custom-user-agent", getContent().getAsJsonObject().get("user-agent").getAsString());
 
 					signal.countDown();
 				}
@@ -114,7 +114,7 @@ public class OptionsTest extends AndroidTestCase
 			.get("get", params, new JsonResponseHandler());
 
 		Assert.assertNotNull(response);
-		Assert.assertEquals(response.getAsJsonObject().get("url").getAsString(), "http://httpbin.org/get?key=value");
+		Assert.assertEquals("http://httpbin.org/get?key=value", response.getAsJsonObject().get("url").getAsString());
 	}
 
 	/**
@@ -132,7 +132,7 @@ public class OptionsTest extends AndroidTestCase
 				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
-					Assert.assertEquals(getContent().getAsJsonObject().get("url").getAsString(), "http://httpbin.org/get?key=value");
+					Assert.assertEquals("http://httpbin.org/get?key=value", getContent().getAsJsonObject().get("url").getAsString());
 
 					signal.countDown();
 				}

@@ -55,7 +55,7 @@ public class SyncPostTest extends AndroidTestCase
 		JsonElement response = client.post("status/404", new JsonResponseHandler());
 
 		Assert.assertNull(response);
-		Assert.assertEquals(client.getConnectionInfo().responseCode, 404);
+		Assert.assertEquals(404, client.getConnectionInfo().responseCode);
 	}
 
 	/**
@@ -65,10 +65,10 @@ public class SyncPostTest extends AndroidTestCase
 	{
 		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
 		client.setAllowRedirect(true);
-		JsonElement response = client.post("absolute-redirect/1", new JsonResponseHandler());
+		JsonElement response = client.post("status/302", new JsonResponseHandler());
 
 		Assert.assertNotNull(response);
-		Assert.assertEquals(client.getConnectionInfo().responseCode, 200);
+		Assert.assertEquals(200, client.getConnectionInfo().responseCode);
 	}
 
 	/**
@@ -80,6 +80,6 @@ public class SyncPostTest extends AndroidTestCase
 		client.setAllowRedirect(false);
 		String response = client.post("status/302", new StringResponseHandler());
 
-		Assert.assertEquals(client.getConnectionInfo().responseCode, 302);
+		Assert.assertEquals(302, client.getConnectionInfo().responseCode);
 	}
 }

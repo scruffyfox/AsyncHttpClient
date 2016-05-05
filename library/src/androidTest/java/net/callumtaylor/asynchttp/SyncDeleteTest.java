@@ -7,7 +7,6 @@ import com.google.gson.JsonElement;
 import junit.framework.Assert;
 
 import net.callumtaylor.asynchttp.response.JsonResponseHandler;
-import net.callumtaylor.asynchttp.response.StringResponseHandler;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -55,31 +54,6 @@ public class SyncDeleteTest extends AndroidTestCase
 		JsonElement response = client.delete("status/404", new JsonResponseHandler());
 
 		Assert.assertNull(response);
-		Assert.assertEquals(client.getConnectionInfo().responseCode, 404);
-	}
-
-	/**
-	 * Tests auto 302 redirect
-	 */
-	public void testDeleteRedirectJson()
-	{
-		SyncHttpClient<JsonElement> client = new SyncHttpClient<>("http://httpbin.org/");
-		client.setAllowRedirect(true);
-		JsonElement response = client.delete("absolute-redirect/1", new JsonResponseHandler());
-
-		Assert.assertNotNull(response);
-		Assert.assertEquals(client.getConnectionInfo().responseCode, 200);
-	}
-
-	/**
-	 * Tests no 302 redirect
-	 */
-	public void testDeleteNoRedirect()
-	{
-		SyncHttpClient<String> client = new SyncHttpClient<>("http://httpbin.org/");
-		client.setAllowRedirect(false);
-		String response = client.delete("status/302", new StringResponseHandler());
-
-		Assert.assertEquals(client.getConnectionInfo().responseCode, 302);
+		Assert.assertEquals(404, client.getConnectionInfo().responseCode);
 	}
 }

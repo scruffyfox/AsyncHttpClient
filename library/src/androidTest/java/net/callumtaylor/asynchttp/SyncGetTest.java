@@ -39,7 +39,7 @@ public class SyncGetTest extends AndroidTestCase
 		JsonElement response = client.get("status/404", new JsonResponseHandler());
 
 		Assert.assertNull(response);
-		Assert.assertEquals(client.getConnectionInfo().responseCode, 404);
+		Assert.assertEquals(404, client.getConnectionInfo().responseCode);
 	}
 
 	/**
@@ -86,7 +86,7 @@ public class SyncGetTest extends AndroidTestCase
 		JsonElement response = client.get("absolute-redirect/1", new JsonResponseHandler());
 
 		Assert.assertNotNull(response);
-		Assert.assertEquals(client.getConnectionInfo().responseCode, 200);
+		Assert.assertEquals(200, client.getConnectionInfo().responseCode);
 	}
 
 	/**
@@ -98,6 +98,6 @@ public class SyncGetTest extends AndroidTestCase
 		client.setAllowRedirect(false);
 		String response = client.get("status/302", new StringResponseHandler());
 
-		Assert.assertEquals(client.getConnectionInfo().responseCode, 302);
+		Assert.assertEquals(302, client.getConnectionInfo().responseCode);
 	}
 }

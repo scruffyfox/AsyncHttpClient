@@ -57,7 +57,7 @@ public class ResponseHandlersTest extends AndroidTestCase
 				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
-					Assert.assertEquals(getContent().url, "http://httpbin.org/get");
+					Assert.assertEquals("http://httpbin.org/get", getContent().url);
 					Assert.assertNotNull(getContent().origin);
 					Assert.assertNotNull(getContent().args);
 					Assert.assertNotNull(getContent().headers);
@@ -66,7 +66,7 @@ public class ResponseHandlersTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -88,7 +88,7 @@ public class ResponseHandlersTest extends AndroidTestCase
 				{
 					Assert.assertNotNull(getContent());
 
-					Assert.assertEquals(getContent().getAsJsonObject().get("url").getAsString(), "http://httpbin.org/get");
+					Assert.assertEquals("http://httpbin.org/get", getContent().getAsJsonObject().get("url").getAsString());
 					Assert.assertNotNull(getContent().getAsJsonObject().get("origin").getAsString());
 					Assert.assertNotNull(getContent().getAsJsonObject().get("args"));
 					Assert.assertNotNull(getContent().getAsJsonObject().get("headers"));
@@ -97,7 +97,7 @@ public class ResponseHandlersTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -119,6 +119,6 @@ public class ResponseHandlersTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 }

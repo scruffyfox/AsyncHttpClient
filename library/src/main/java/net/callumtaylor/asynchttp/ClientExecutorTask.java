@@ -92,6 +92,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 			.followRedirects(allowRedirect)
 			.followSslRedirects(allowRedirect)
 			.connectTimeout(requestTimeout, TimeUnit.MILLISECONDS)
+			.readTimeout(requestTimeout, TimeUnit.MILLISECONDS)
 			.build();
 
 		if (allowAllSsl)

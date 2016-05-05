@@ -46,7 +46,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -62,7 +62,7 @@ public class AsyncGetTest extends AndroidTestCase
 				{
 					super.onReceiveStream(stream, client, totalLength);
 
-					Assert.assertEquals(totalLength, 16384);
+					Assert.assertEquals(16384, totalLength);
 				}
 
 				@Override public void onByteChunkReceived(byte[] chunk, long chunkLength, long totalProcessed, long totalLength)
@@ -77,13 +77,13 @@ public class AsyncGetTest extends AndroidTestCase
 					}
 
 					Assert.assertTrue(chunkLength > 0);
-					Assert.assertEquals(totalLength, 16384);
+					Assert.assertEquals(16384, totalLength);
 				}
 
 				@Override public void onByteChunkReceivedProcessed(long totalProcessed, long totalLength)
 				{
 					Assert.assertTrue(totalProcessed >= 0);
-					Assert.assertEquals(totalLength, 16384);
+					Assert.assertEquals(16384, totalLength);
 				}
 
 				@Override public void onFinish()
@@ -94,7 +94,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -115,7 +115,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -130,13 +130,13 @@ public class AsyncGetTest extends AndroidTestCase
 				@Override public void onFinish()
 				{
 					Assert.assertNull(getContent());
-					Assert.assertEquals(getConnectionInfo().responseCode, 404);
+					Assert.assertEquals(404, getConnectionInfo().responseCode);
 
 					signal.countDown();
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -157,7 +157,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -178,7 +178,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -199,7 +199,7 @@ public class AsyncGetTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -216,17 +216,17 @@ public class AsyncGetTest extends AndroidTestCase
 			{
 				Assert.assertNotNull(getContent());
 				Assert.assertTrue(getContent() instanceof JsonElement);
-				Assert.assertEquals(getConnectionInfo().responseCode, 200);
+				Assert.assertEquals(200, getConnectionInfo().responseCode);
 
 				signal.countDown();
 			}
 		});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
-	 * Tests auto 302 redirect
+	 * Tests no 302 redirect
 	 * @throws InterruptedException
 	 */
 	public void testGetNoRedirect() throws InterruptedException
@@ -237,12 +237,33 @@ public class AsyncGetTest extends AndroidTestCase
 		{
 			@Override public void onFinish()
 			{
-				Assert.assertEquals(getConnectionInfo().responseCode, 302);
+				Assert.assertEquals(302, getConnectionInfo().responseCode);
 
 				signal.countDown();
 			}
 		});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
+	}
+
+	/**
+	 * Tests client timeout
+	 * @throws InterruptedException
+	 */
+	public void testGetTimeout() throws InterruptedException
+	{
+		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/", 1000);
+		client.get("delay/2", new BasicResponseHandler()
+		{
+			@Override public void onFinish()
+			{
+				Assert.assertNull(getContent());
+				Assert.assertEquals(0, getConnectionInfo().responseCode);
+
+				signal.countDown();
+			}
+		});
+
+		signal.await(3000, TimeUnit.MILLISECONDS);
 	}
 }

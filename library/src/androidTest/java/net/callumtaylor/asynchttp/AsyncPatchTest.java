@@ -44,7 +44,7 @@ public class AsyncPatchTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -68,13 +68,13 @@ public class AsyncPatchTest extends AndroidTestCase
 				{
 					Assert.assertNotNull(chunk);
 					Assert.assertTrue(chunkLength > 0);
-					Assert.assertEquals(totalLength, 16384);
+					Assert.assertEquals(16384, totalLength);
 				}
 
 				@Override public void onByteChunkSentProcessed(long totalProcessed, long totalLength)
 				{
 					Assert.assertTrue(totalProcessed >= 0);
-					Assert.assertEquals(totalLength, 16384);
+					Assert.assertEquals(16384, totalLength);
 				}
 
 				@Override public void onFinish()
@@ -85,7 +85,7 @@ public class AsyncPatchTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -108,7 +108,7 @@ public class AsyncPatchTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -123,13 +123,13 @@ public class AsyncPatchTest extends AndroidTestCase
 				@Override public void onFinish()
 				{
 					Assert.assertNull(getContent());
-					Assert.assertEquals(getConnectionInfo().responseCode, 404);
+					Assert.assertEquals(404, getConnectionInfo().responseCode);
 
 					signal.countDown();
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -152,6 +152,6 @@ public class AsyncPatchTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 }

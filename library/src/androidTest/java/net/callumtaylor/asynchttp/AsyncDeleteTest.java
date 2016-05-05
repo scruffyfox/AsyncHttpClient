@@ -43,7 +43,7 @@ public class AsyncDeleteTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -64,7 +64,7 @@ public class AsyncDeleteTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -87,7 +87,7 @@ public class AsyncDeleteTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -102,13 +102,13 @@ public class AsyncDeleteTest extends AndroidTestCase
 				@Override public void onFinish()
 				{
 					Assert.assertNull(getContent());
-					Assert.assertEquals(getConnectionInfo().responseCode, 404);
+					Assert.assertEquals(404, getConnectionInfo().responseCode);
 
 					signal.countDown();
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -129,6 +129,6 @@ public class AsyncDeleteTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 }
