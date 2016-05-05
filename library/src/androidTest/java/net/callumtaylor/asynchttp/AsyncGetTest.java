@@ -7,6 +7,7 @@ import com.google.gson.JsonElement;
 import junit.framework.Assert;
 
 import net.callumtaylor.asynchttp.obj.ClientTaskImpl;
+import net.callumtaylor.asynchttp.response.BasicResponseHandler;
 import net.callumtaylor.asynchttp.response.ByteArrayResponseHandler;
 import net.callumtaylor.asynchttp.response.JsonResponseHandler;
 import net.callumtaylor.asynchttp.response.StringResponseHandler;
@@ -26,29 +27,6 @@ public class AsyncGetTest extends AndroidTestCase
 	@Override protected void setUp() throws Exception
 	{
 		super.setUp();
-	}
-
-	/**
-	 * Tests custom user agent is sent with request
-	 * @throws InterruptedException
-	 */
-	public void testCustomUserAgent() throws InterruptedException
-	{
-		AsyncHttpClient.userAgent = "custom-user-agent";
-
-		new AsyncHttpClient("http://httpbin.org/")
-			.get("user-agent", new JsonResponseHandler()
-			{
-				@Override public void onFinish()
-				{
-					Assert.assertNotNull(getContent());
-					Assert.assertEquals(getContent().getAsJsonObject().get("user-agent").getAsString(), "custom-user-agent");
-
-					signal.countDown();
-				}
-			});
-
-		signal.await(1500, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -231,13 +209,35 @@ public class AsyncGetTest extends AndroidTestCase
 	public void testGetRedirectJson() throws InterruptedException
 	{
 		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
-		client.setAllowAllSsl(true);
+		client.setAllowRedirect(true);
 		client.get("absolute-redirect/1", new JsonResponseHandler()
 		{
 			@Override public void onFinish()
 			{
 				Assert.assertNotNull(getContent());
 				Assert.assertTrue(getContent() instanceof JsonElement);
+				Assert.assertEquals(getConnectionInfo().responseCode, 200);
+
+				signal.countDown();
+			}
+		});
+
+		signal.await(1500, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * Tests auto 302 redirect
+	 * @throws InterruptedException
+	 */
+	public void testGetNoRedirect() throws InterruptedException
+	{
+		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
+		client.setAllowRedirect(false);
+		client.get("status/302", new BasicResponseHandler()
+		{
+			@Override public void onFinish()
+			{
+				Assert.assertEquals(getConnectionInfo().responseCode, 302);
 
 				signal.countDown();
 			}
