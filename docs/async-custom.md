@@ -7,24 +7,24 @@ Here is an example custom response handler. It's important to remember that you'
 ```java
 AsyncHttpClient client = new AyncHttpClient("http://example.com");
 
-client.get("api/v1/", new AsyncHttpResponseHandler()
+client.get("api/v1/", new ResponseHandler<String>()
 {
 	private StringBuffer stringBuffer;
-	private JsonElement content;
+	private String content;
 
-	@Override public void onByteChunkReceived(byte[] chunk, int chunkLength, long totalProcessed, long totalLength)
+	@Override public void onByteChunkReceived(byte[] chunk, long chunkLength, long totalProcessed, long totalLength)
 	{
 		if (stringBuffer == null)
 		{
 			int total = (int)(totalLength > Integer.MAX_VALUE ? Integer.MAX_VALUE : totalLength);
-			stringBuffer = new StringBuffer(Math.max(total, 1024 * 8));
+			stringBuffer = new StringBuffer(Math.max(8192, total));
 		}
 
 		if (chunk != null)
 		{
 			try
 			{
-				stringBuffer.append(new String(chunk, 0, chunkLength, "UTF-8"));
+				stringBuffer.append(new String(chunk, 0, (int)chunkLength, "UTF-8"));
 			}
 			catch (Exception e)
 			{
@@ -33,28 +33,21 @@ client.get("api/v1/", new AsyncHttpResponseHandler()
 		}
 	}
 
+	/**
+	 * Generate the String from the buffer and remove it to allow the GC to clean up properly
+	 */
 	@Override public void generateContent()
 	{
-		try
-		{
-			this.content = new JsonParser().parse(stringBuffer.toString());
-			this.stringBuffer = null;
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+		this.content = stringBuffer.toString();
+		this.stringBuffer = null;
 	}
 
 	/**
-	 * Processes the response from the stream.
-	 * This is <b>not</b> ran on the UI thread
-	 *
-	 * @return The data represented as a gson JsonElement primitive type
+	 * @return The data represented as a String
 	 */
-	@Override public JsonElement getContent()
+	@Override public String getContent()
 	{
-		return content
+		return content;
 	}
 });
 ```

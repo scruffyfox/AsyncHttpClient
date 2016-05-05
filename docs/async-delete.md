@@ -4,8 +4,7 @@
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
-		
-	client.delete("api/v1/", params, headers, new JsonResponseHandler()
+	client.delete("api/v1/", new JsonResponseHandler()
 	{
 		@Override public void onSuccess()
 		{
@@ -18,12 +17,12 @@
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
-	List<NameValuePair> params = new ArrayList<NameValuePair>();
-	params.add(new BasicNameValuePair("key", "value"));
-	
-	List<Header> headers = new ArrayList<Header>();
-	headers.add(new BasicHeader("1", "2"));
-	
+
+	List<NameValuePair> params = new ArrayList<>();
+	params.add(new NameValuePair("key", "value"));
+
+	Headers headers = Headers.of("Header", "value");
+
 	client.delete("api/v1/", params, headers, new JsonResponseHandler()
 	{
 		@Override public void onSuccess()

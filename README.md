@@ -6,7 +6,7 @@ This is the new and improved version of `AsyncHttpClient` taken from X-Library. 
 
 In this version it allows a more flexible usage of posting files, http entities and GZIP handling.
 
-The library uses Apache's HttpRequest library.
+The library uses Square's OKHTTP library.
 
 It consists of 2 different classes, `AsyncHttpClient` and `SyncHttpClient`. Obviously by the name, `AsyncHttpClient` is for asynchronous requests which uses the `AsyncTask` paradigm, and `SyncHttpClient` is for synchronous requests which should be handled **by yourself in a thread outside of the UI thread**.
 
@@ -14,7 +14,7 @@ It consists of 2 different classes, `AsyncHttpClient` and `SyncHttpClient`. Obvi
 
 Simply import the gradle file into Android Studio and reference the dependancy in your `settings.gradle` and project's `build.gradle`
 
-Alternatively you can add the maven dependancy `net.callumtaylor:asynchttpclient:1.5.1` **N.B. Do NOT use `net.callumtaylor.asynchttp` for the group ID. This is an old ID and will NOT be updated**
+Alternatively you can add the maven dependancy `net.callumtaylor:asynchttpclient:2.0` **N.B. Do NOT use `net.callumtaylor.asynchttp` for the group ID. This is an old ID and will NOT be updated**
 
 #Table of contents
 
@@ -52,3 +52,7 @@ You can also get the info of the request by calling your `SyncHttpClient` instan
 
 Because of the nature of REST, `GET` and `DELETE` requests behave in the same
 way, `POST` and `PUT` requests also behave in the same way.
+
+#License
+
+See [library/LICENSE](library/LICENSE)

@@ -12,39 +12,22 @@
 ```java
 	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");
 
-	JsonEntity data = new JsonEntity("{\"key\":\"value\"}");
-	GzippedEntity entity = new GzippedEntity(data);
+	RequestBody postBody = RequestBody.create(MediaType.parse("application/json"), "{\"test\":\"hello world\"}");
 
-	JsonElement response = client.post("api/v1/", headers, new JsonResponseHandler());
-```
-
-###Example POST - URL Encoded post data
-
-```java
-	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");
-
-	RequestEntity entity = new RequestEntity();
-	entity.add("key", "value");
-
-	JsonElement response = client.post("api/v1/", params, entity, headers, new JsonResponseHandler());
-	});
+	JsonElement response = client.post("api/v1/", postBody, new JsonResponseHandler());
 ```
 
 ###Example POST - Multiple Entity + file
 
 ```java
 	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");
-	List<NameValuePair> params = new ArrayList<NameValuePair>();
-	params.add(new BasicNameValuePair("key", "value"));
 
-	List<Header> headers = new ArrayList<Header>();
-	headers.add(new BasicHeader("1", "2"));
+	List<NameValuePair> params = new ArrayList<>();
+	params.add(new NameValuePair("key", "value"));
 
-	MultiPartEntity entity = new MultiPartEntity();
-	FileBody data1 = new FileBody(new File("/IMG_6614.JPG"), "image/jpeg");
-	JsonEntity data2 = new JsonEntity("{\"key\":\"value\"}");
-	entity.addPart("image1.jpg", data1);
-	entity.addPart("content1", data2);
+	Headers headers = Headers.of("Header", "value");
 
-	JsonElement response = client.post("api/v1/", params, entity, headers, new JsonResponseHandler());
+	RequestBody postBody = new MultipartBody.Builder().addFormDataPart("test", "test.json", RequestBody.create(MediaType.parse("application/json"), "{\"test\":\"hello world\"}"));
+
+	JsonElement response = client.post("api/v1/", params, postBody, headers, new JsonResponseHandler());
 ```
