@@ -69,6 +69,15 @@ task installArchives(type: Upload) {
 	}
 }
 
+if (JavaVersion.current().isJava8Compatible())
+{
+	allprojects {
+		tasks.withType(Javadoc) {
+			options.addStringOption('Xdoclint:none', '-quiet')
+		}
+	}
+}
+
 ext.SONATYPE_USERNAME = properties.get('NEXUS_USERNAME', '')
 ext.SONATYPE_PASSWORD = properties.get('NEXUS_PASSWORD', '')
 
@@ -101,9 +110,7 @@ afterEvaluate { project ->
 		def matchingVariant = android.libraryVariants.find({ it.name.equals('release') })
 		def androidJar = "${android.sdkDirectory}/platforms/${android.compileSdkVersion}/android.jar"
 
-		// Use delomboked source instead of the raw source if applicable.
-		def delombok = { tasks.findByPath('delombok') }
-		source { delombok() ? delombok().outputs : matchingVariant.javaCompile.source }
+		source { matchingVariant.javaCompile.source }
 		source "${buildDir}/generated/source/buildConfig/release/"
 		source "${buildDir}/generated/source/r/release/"
 
@@ -128,15 +135,7 @@ afterEvaluate { project ->
 	}
 
 	androidMavenJavadocs.dependsOn {
-		// Use the delomboked source instead of the raw source if applicable.
-		if (tasks.findByPath('delombok'))
-		{
-			tasks.delombok
-		}
-		else
-		{
-			[tasks.processReleaseResources, tasks.generateReleaseBuildConfig]
-		}
+		[tasks.processReleaseResources, tasks.generateReleaseBuildConfig]
 	}
 
 	task androidJavadocsJar(type: Jar, dependsOn: androidMavenJavadocs) {
