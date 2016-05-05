@@ -62,7 +62,7 @@ public class OptionsTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -70,13 +70,13 @@ public class OptionsTest extends AndroidTestCase
 	 */
 	public void testSyncHeaders()
 	{
-		Headers headers = Headers.of("header", "value");
+		Headers headers = Headers.of("Header", "value");
 
 		JsonElement response = new SyncHttpClient<JsonElement>("http://httpbin.org/")
 			.get("headers", null, headers, new JsonResponseHandler());
 
 		Assert.assertNotNull(response);
-		Assert.assertTrue(response.getAsJsonObject().get("headers").getAsJsonObject().has("header"));
+		Assert.assertTrue(response.getAsJsonObject().get("headers").getAsJsonObject().has("Header"));
 	}
 
 	/**
@@ -85,7 +85,7 @@ public class OptionsTest extends AndroidTestCase
 	 */
 	public void testAsyncHeaders() throws InterruptedException
 	{
-		Headers headers = Headers.of("header", "value");
+		Headers headers = Headers.of("Header", "value");
 
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("headers", null, headers, new JsonResponseHandler()
@@ -93,13 +93,13 @@ public class OptionsTest extends AndroidTestCase
 				@Override public void onFinish()
 				{
 					Assert.assertNotNull(getContent());
-					Assert.assertTrue(getContent().getAsJsonObject().get("headers").getAsJsonObject().has("header"));
+					Assert.assertTrue(getContent().getAsJsonObject().get("headers").getAsJsonObject().has("Header"));
 
 					signal.countDown();
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -138,6 +138,6 @@ public class OptionsTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.SECONDS);
+		signal.await(1500, TimeUnit.MILLISECONDS);
 	}
 }
