@@ -72,10 +72,13 @@ public class CountingRequestBody extends RequestBody
 
 		@Override public void write(Buffer source, long byteCount) throws IOException
 		{
+			Buffer copy = new Buffer();
+			source.copyTo(copy, 0, byteCount);
+
 			super.write(source, byteCount);
 
 			bytesWritten += byteCount;
-			listener.onRequestProgress(source.readByteArray(), byteCount, bytesWritten, contentLength());
+			listener.onRequestProgress(copy.readByteArray(), byteCount, bytesWritten, contentLength());
 		}
 	}
 
