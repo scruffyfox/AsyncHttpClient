@@ -17,13 +17,14 @@ import java.net.SocketTimeoutException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Cache;
+import okhttp3.Headers;
+
 /**
  * @author Callum Taylor
  */
 public class AsyncGetTest extends AndroidTestCase
 {
-	final CountDownLatch signal = new CountDownLatch(1);
-
 	@Override protected void setUp() throws Exception
 	{
 		super.setUp();
@@ -35,6 +36,8 @@ public class AsyncGetTest extends AndroidTestCase
 	 */
 	public void testGet() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("get", new JsonResponseHandler()
 			{
@@ -46,7 +49,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(10, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -55,6 +58,8 @@ public class AsyncGetTest extends AndroidTestCase
 	 */
 	public void testGetProgress() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("bytes/16384", new ByteArrayResponseHandler()
 			{
@@ -94,7 +99,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(10, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -103,6 +108,8 @@ public class AsyncGetTest extends AndroidTestCase
 	 */
 	public void testGetJson() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("get", new JsonResponseHandler()
 			{
@@ -115,7 +122,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(10, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -124,6 +131,8 @@ public class AsyncGetTest extends AndroidTestCase
 	 */
 	public void testGet404() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("status/404", new JsonResponseHandler()
 			{
@@ -136,7 +145,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(10, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -145,6 +154,8 @@ public class AsyncGetTest extends AndroidTestCase
 	 */
 	public void testGetGzipJson() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("gzip", new JsonResponseHandler()
 			{
@@ -157,7 +168,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(10, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -166,6 +177,8 @@ public class AsyncGetTest extends AndroidTestCase
 	 */
 	public void testGetSslJson() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("https://httpbin.org/")
 			.get("get", new JsonResponseHandler()
 			{
@@ -178,7 +191,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(10, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -187,6 +200,8 @@ public class AsyncGetTest extends AndroidTestCase
 	 */
 	public void testGetUnsafeSslJson() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		AsyncHttpClient client = new AsyncHttpClient("https://cruxoft.com/");
 		client.setAllowAllSsl(true);
 		client.get("get", new StringResponseHandler()
@@ -199,7 +214,7 @@ public class AsyncGetTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(10, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -208,6 +223,8 @@ public class AsyncGetTest extends AndroidTestCase
 	 */
 	public void testGetRedirectJson() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
 		client.setAllowRedirect(true);
 		client.get("absolute-redirect/1", new JsonResponseHandler()
@@ -222,7 +239,7 @@ public class AsyncGetTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(10, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -231,6 +248,8 @@ public class AsyncGetTest extends AndroidTestCase
 	 */
 	public void testGetNoRedirect() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
 		client.setAllowRedirect(false);
 		client.get("status/302", new BasicResponseHandler()
@@ -243,7 +262,7 @@ public class AsyncGetTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(10, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -252,6 +271,8 @@ public class AsyncGetTest extends AndroidTestCase
 	 */
 	public void testGetTimeout() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/", 1000);
 		client.get("delay/2", new BasicResponseHandler()
 		{
@@ -264,6 +285,92 @@ public class AsyncGetTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(3000, TimeUnit.MILLISECONDS);
+		signal.await(10, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * Tests automatic cache controlling
+	 */
+	public void testGetCacheControl() throws InterruptedException
+	{
+		final CountDownLatch signal = new CountDownLatch(1);
+		final long current = System.currentTimeMillis();
+
+		AsyncHttpClient.cache = new Cache(getContext().getCacheDir(), 1024 * 1024 * 1);
+
+		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
+		client.get("cache/10", null, Headers.of("Timestamp", current + ""), new StringResponseHandler()
+		{
+			@Override public void onFinish()
+			{
+				final String firstResponse = getContent();
+
+				if (System.currentTimeMillis() - current < 10000)
+				{
+					AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
+					client.get("cache/10", null, Headers.of("Timestamp", System.currentTimeMillis() + ""), new JsonResponseHandler()
+					{
+						@Override public void onFinish()
+						{
+							String responseTimestamp = getContent().getAsJsonObject().get("headers").getAsJsonObject().get("Timestamp").getAsString();
+							assertEquals("" + current, responseTimestamp);
+
+							signal.countDown();
+						}
+					});
+				}
+				else
+				{
+					Assert.fail();
+					signal.countDown();
+				}
+			}
+		});
+
+		signal.await(10, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * Tests that caching is not used if cache is set to null
+	 */
+	public void testGetCacheNotControl() throws InterruptedException
+	{
+		final CountDownLatch signal = new CountDownLatch(1);
+		final long current = System.currentTimeMillis();
+
+		AsyncHttpClient.cache = null;
+
+		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
+		client.get("get", null, Headers.of("Timestamp", current + ""), new StringResponseHandler()
+		{
+			@Override public void onFinish()
+			{
+				final long latest = System.currentTimeMillis();
+
+				if (latest - current < 10000)
+				{
+					AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
+					client.get("get", null, Headers.of("Timestamp", latest + ""), new JsonResponseHandler()
+					{
+						@Override public void onFinish()
+						{
+							String responseTimestamp = getContent().getAsJsonObject().get("headers").getAsJsonObject().get("Timestamp").getAsString();
+
+							assertEquals("" + current, responseTimestamp);
+							assertTrue(current != latest);
+
+							signal.countDown();
+						}
+					});
+				}
+				else
+				{
+					Assert.fail();
+					signal.countDown();
+				}
+			}
+		});
+
+		signal.await(10, TimeUnit.SECONDS);
 	}
 }

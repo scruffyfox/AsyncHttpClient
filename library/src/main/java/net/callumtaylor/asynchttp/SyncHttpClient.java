@@ -1,5 +1,6 @@
 package net.callumtaylor.asynchttp;
 
+import android.content.Context;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -14,6 +15,7 @@ import net.callumtaylor.asynchttp.response.ResponseHandler;
 
 import java.util.List;
 
+import okhttp3.Cache;
 import okhttp3.Headers;
 import okhttp3.RequestBody;
 
@@ -71,6 +73,12 @@ public class SyncHttpClient<E>
 	 * User agent to send with every request. Defaults to {@link RequestUtil#getDefaultUserAgent()}
 	 */
 	public static String userAgent = RequestUtil.getDefaultUserAgent();
+
+	/**
+	 * Instance for where to store cached requests. Defaults to null (off). You should set this to {@link Context#getCacheDir()}
+	 * if you want auto cache-control handling
+	 */
+	public static Cache cache = null;
 
 	private Uri requestUri;
 	private long requestTimeout = 0L;
@@ -1408,7 +1416,7 @@ public class SyncHttpClient<E>
 
 		headers = headers.newBuilder().add("User-Agent", userAgent).build();
 
-		executor = new ClientExecutorTask<E>(mode, uri, headers, sendData, requestProcessor, allowRedirect, allowAllSsl, requestTimeout);
+		executor = new ClientExecutorTask<E>(mode, uri, headers, sendData, requestProcessor, allowRedirect, allowAllSsl, requestTimeout, cache);
 		executor.preExecute();
 		E response = executor.executeTask();
 		executor.postExecute();
