@@ -218,6 +218,17 @@ public class AsyncHttpClient
 	/**
 	 * Performs a GET request on the baseUri
 	 * @param path The path extended from the baseUri
+	 * @param headers The request headers for the connection
+	 * @param response The response handler for the request
+	 */
+	public void get(String path, @Nullable Headers headers, @Nullable ResponseHandler response)
+	{
+		get(path, null, headers, response);
+	}
+
+	/**
+	 * Performs a GET request on the baseUri
+	 * @param path The path extended from the baseUri
 	 * @param params The Query params to append to the baseUri
 	 * @param headers The request headers for the connection
 	 * @param response The response handler for the request
