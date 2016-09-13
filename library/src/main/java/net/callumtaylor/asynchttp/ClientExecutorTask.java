@@ -302,7 +302,14 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 			}
 		}
 
-		return (F)this.response.getContent();
+		if (this.response != null)
+		{
+			return (F)this.response.getContent();
+		}
+		else
+		{
+			return null;
+		}
 	}
 
 	@Override public void postExecute()
