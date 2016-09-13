@@ -1,6 +1,7 @@
 package net.callumtaylor.asynchttp;
 
 import android.annotation.TargetApi;
+import android.content.Context;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.AsyncTask.Status;
@@ -17,6 +18,7 @@ import net.callumtaylor.asynchttp.response.ResponseHandler;
 
 import java.util.List;
 
+import okhttp3.Cache;
 import okhttp3.Headers;
 import okhttp3.RequestBody;
 
@@ -100,6 +102,12 @@ public class AsyncHttpClient
 	 * User agent to send with every request. Defaults to {@link RequestUtil#getDefaultUserAgent()}
 	 */
 	public static String userAgent = RequestUtil.getDefaultUserAgent();
+
+	/**
+	 * Instance for where to store cached requests. Defaults to null (off). You should set this to {@link Context#getCacheDir()}
+	 * if you want auto cache-control handling
+	 */
+	public static Cache cache = null;
 
 	private AsyncClientExecutorTask executorTask;
 	private Uri requestUri;
@@ -1119,7 +1127,7 @@ public class AsyncHttpClient
 
 			headers = headers.newBuilder().add("User-Agent", userAgent).build();
 
-			clientTask = new ClientExecutorTask(mode, request, headers, postData, response, allowRedirect, allowAllSsl, requestTimeout)
+			clientTask = new ClientExecutorTask(mode, request, headers, postData, response, allowRedirect, allowAllSsl, requestTimeout, cache)
 			{
 				@Override public void transferProgress(Packet packet)
 				{
