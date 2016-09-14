@@ -49,7 +49,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(10, TimeUnit.SECONDS);
+		signal.await(60, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -99,7 +99,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(10, TimeUnit.SECONDS);
+		signal.await(60, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -122,7 +122,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(10, TimeUnit.SECONDS);
+		signal.await(60, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -145,7 +145,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(10, TimeUnit.SECONDS);
+		signal.await(60, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -168,7 +168,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(10, TimeUnit.SECONDS);
+		signal.await(60, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -191,7 +191,7 @@ public class AsyncGetTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(10, TimeUnit.SECONDS);
+		signal.await(60, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -214,7 +214,7 @@ public class AsyncGetTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(10, TimeUnit.SECONDS);
+		signal.await(60, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -239,7 +239,7 @@ public class AsyncGetTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(10, TimeUnit.SECONDS);
+		signal.await(60, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -262,7 +262,7 @@ public class AsyncGetTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(10, TimeUnit.SECONDS);
+		signal.await(60, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -285,7 +285,7 @@ public class AsyncGetTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(10, TimeUnit.SECONDS);
+		signal.await(60, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -327,7 +327,7 @@ public class AsyncGetTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(10, TimeUnit.SECONDS);
+		signal.await(60, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -341,7 +341,7 @@ public class AsyncGetTest extends AndroidTestCase
 		AsyncHttpClient.cache = null;
 
 		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
-		client.get("get", null, Headers.of("Timestamp", current + ""), new StringResponseHandler()
+		client.get("cache/10", null, Headers.of("Timestamp", current + ""), new StringResponseHandler()
 		{
 			@Override public void onFinish()
 			{
@@ -350,13 +350,13 @@ public class AsyncGetTest extends AndroidTestCase
 				if (latest - current < 10000)
 				{
 					AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
-					client.get("get", null, Headers.of("Timestamp", latest + ""), new JsonResponseHandler()
+					client.get("cache/10", null, Headers.of("Timestamp", latest + ""), new JsonResponseHandler()
 					{
 						@Override public void onFinish()
 						{
 							String responseTimestamp = getContent().getAsJsonObject().get("headers").getAsJsonObject().get("Timestamp").getAsString();
 
-							assertEquals("" + current, responseTimestamp);
+							assertEquals("" + latest, responseTimestamp);
 							assertTrue(current != latest);
 
 							signal.countDown();
@@ -371,6 +371,6 @@ public class AsyncGetTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(10, TimeUnit.SECONDS);
+		signal.await(60, TimeUnit.SECONDS);
 	}
 }

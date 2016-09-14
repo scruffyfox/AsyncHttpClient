@@ -1,6 +1,7 @@
 package net.callumtaylor.asynchttp;
 
 import android.net.Uri;
+import android.support.annotation.Nullable;
 
 import net.callumtaylor.asynchttp.obj.ClientTaskImpl;
 import net.callumtaylor.asynchttp.obj.CountingRequestBody;
