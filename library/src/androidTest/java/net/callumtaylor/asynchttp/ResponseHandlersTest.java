@@ -20,8 +20,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class ResponseHandlersTest extends AndroidTestCase
 {
-	final CountDownLatch signal = new CountDownLatch(1);
-
 	@Override protected void setUp() throws Exception
 	{
 		super.setUp();
@@ -46,6 +44,8 @@ public class ResponseHandlersTest extends AndroidTestCase
 	 */
 	public void testGsonResponseHandler() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("get", new GsonResponseHandler<HttpBinResponse>(HttpBinResponse.class)
 			{
@@ -67,7 +67,12 @@ public class ResponseHandlersTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -76,6 +81,8 @@ public class ResponseHandlersTest extends AndroidTestCase
 	 */
 	public void testJsonResponseHandler() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("get", new JsonResponseHandler()
 			{
@@ -98,7 +105,12 @@ public class ResponseHandlersTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -107,6 +119,8 @@ public class ResponseHandlersTest extends AndroidTestCase
 	 */
 	public void testGetBitmapResponse() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+		
 		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
 		client.setAllowAllSsl(true);
 		client.get("/image/png", new BitmapResponseHandler()

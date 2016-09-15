@@ -19,8 +19,6 @@ import okhttp3.RequestBody;
  */
 public class AsyncDeleteTest extends AndroidTestCase
 {
-	final CountDownLatch signal = new CountDownLatch(1);
-
 	@Override protected void setUp() throws Exception
 	{
 		super.setUp();
@@ -32,6 +30,8 @@ public class AsyncDeleteTest extends AndroidTestCase
 	 */
 	public void testDelete() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.delete("delete", new JsonResponseHandler()
 			{
@@ -43,7 +43,12 @@ public class AsyncDeleteTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -52,6 +57,8 @@ public class AsyncDeleteTest extends AndroidTestCase
 	 */
 	public void testDeleteJson() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.delete("delete", new JsonResponseHandler()
 			{
@@ -64,7 +71,12 @@ public class AsyncDeleteTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -73,6 +85,8 @@ public class AsyncDeleteTest extends AndroidTestCase
 	 */
 	public void testDeleteJsonBody() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		RequestBody postBody = RequestBody.create(MediaType.parse("application/json"), "{\"test\":\"hello world\"}");
 
 		new AsyncHttpClient("http://httpbin.org/")
@@ -87,7 +101,12 @@ public class AsyncDeleteTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -96,6 +115,8 @@ public class AsyncDeleteTest extends AndroidTestCase
 	 */
 	public void testDelete404() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.delete("status/404", new JsonResponseHandler()
 			{
@@ -108,7 +129,12 @@ public class AsyncDeleteTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -117,6 +143,8 @@ public class AsyncDeleteTest extends AndroidTestCase
 	 */
 	public void testDeleteSslJson() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("https://httpbin.org/")
 			.delete("delete", new JsonResponseHandler()
 			{
@@ -129,6 +157,11 @@ public class AsyncDeleteTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 }

@@ -20,8 +20,6 @@ import okhttp3.RequestBody;
  */
 public class AsyncPatchTest extends AndroidTestCase
 {
-	final CountDownLatch signal = new CountDownLatch(1);
-
 	@Override protected void setUp() throws Exception
 	{
 		super.setUp();
@@ -33,6 +31,8 @@ public class AsyncPatchTest extends AndroidTestCase
 	 */
 	public void testPatch() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.patch("patch", new JsonResponseHandler()
 			{
@@ -44,7 +44,12 @@ public class AsyncPatchTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -53,6 +58,8 @@ public class AsyncPatchTest extends AndroidTestCase
 	 */
 	public void testPatchProgress() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		byte[] patchData = new byte[16384];
 		for (int index = 0; index < patchData.length; index++)
 		{
@@ -85,7 +92,12 @@ public class AsyncPatchTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -94,6 +106,8 @@ public class AsyncPatchTest extends AndroidTestCase
 	 */
 	public void testPatchJson() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		RequestBody patchBody = RequestBody.create(MediaType.parse("application/json"), "{\"test\":\"hello world\"}");
 
 		new AsyncHttpClient("http://httpbin.org/")
@@ -108,7 +122,12 @@ public class AsyncPatchTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -117,6 +136,8 @@ public class AsyncPatchTest extends AndroidTestCase
 	 */
 	public void testGet404() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.patch("status/404", new JsonResponseHandler()
 			{
@@ -129,7 +150,12 @@ public class AsyncPatchTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -138,6 +164,8 @@ public class AsyncPatchTest extends AndroidTestCase
 	 */
 	public void testPatchSslJson() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		RequestBody patchBody = RequestBody.create(MediaType.parse("application/json"), "{\"test\":\"hello world\"}");
 
 		new AsyncHttpClient("https://httpbin.org/")
@@ -152,6 +180,11 @@ public class AsyncPatchTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 }
