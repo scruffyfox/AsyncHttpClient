@@ -17,9 +17,6 @@ import java.net.SocketTimeoutException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import okhttp3.Cache;
-import okhttp3.Headers;
-
 /**
  * @author Callum Taylor
  */
@@ -50,6 +47,11 @@ public class AsyncGetTest extends AndroidTestCase
 			});
 
 		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -100,6 +102,11 @@ public class AsyncGetTest extends AndroidTestCase
 			});
 
 		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -123,6 +130,11 @@ public class AsyncGetTest extends AndroidTestCase
 			});
 
 		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -146,6 +158,11 @@ public class AsyncGetTest extends AndroidTestCase
 			});
 
 		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -169,6 +186,11 @@ public class AsyncGetTest extends AndroidTestCase
 			});
 
 		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -192,6 +214,11 @@ public class AsyncGetTest extends AndroidTestCase
 			});
 
 		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -215,6 +242,11 @@ public class AsyncGetTest extends AndroidTestCase
 		});
 
 		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -240,6 +272,11 @@ public class AsyncGetTest extends AndroidTestCase
 		});
 
 		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -263,6 +300,11 @@ public class AsyncGetTest extends AndroidTestCase
 		});
 
 		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -286,91 +328,10 @@ public class AsyncGetTest extends AndroidTestCase
 		});
 
 		signal.await(60, TimeUnit.SECONDS);
-	}
 
-	/**
-	 * Tests automatic cache controlling
-	 */
-	public void testGetCacheControl() throws InterruptedException
-	{
-		final CountDownLatch signal = new CountDownLatch(1);
-		final long current = System.currentTimeMillis();
-
-		AsyncHttpClient.cache = new Cache(getContext().getCacheDir(), 1024 * 1024 * 1);
-
-		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
-		client.get("cache/10", null, Headers.of("Timestamp", current + ""), new StringResponseHandler()
+		if (signal.getCount() != 0)
 		{
-			@Override public void onFinish()
-			{
-				final String firstResponse = getContent();
-
-				if (System.currentTimeMillis() - current < 10000)
-				{
-					AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
-					client.get("cache/10", null, Headers.of("Timestamp", System.currentTimeMillis() + ""), new JsonResponseHandler()
-					{
-						@Override public void onFinish()
-						{
-							String responseTimestamp = getContent().getAsJsonObject().get("headers").getAsJsonObject().get("Timestamp").getAsString();
-							assertEquals("" + current, responseTimestamp);
-
-							signal.countDown();
-						}
-					});
-				}
-				else
-				{
-					Assert.fail();
-					signal.countDown();
-				}
-			}
-		});
-
-		signal.await(60, TimeUnit.SECONDS);
-	}
-
-	/**
-	 * Tests that caching is not used if cache is set to null
-	 */
-	public void testGetCacheNotControl() throws InterruptedException
-	{
-		final CountDownLatch signal = new CountDownLatch(1);
-		final long current = System.currentTimeMillis();
-
-		AsyncHttpClient.cache = null;
-
-		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
-		client.get("cache/10", null, Headers.of("Timestamp", current + ""), new StringResponseHandler()
-		{
-			@Override public void onFinish()
-			{
-				final long latest = System.currentTimeMillis();
-
-				if (latest - current < 10000)
-				{
-					AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
-					client.get("cache/10", null, Headers.of("Timestamp", latest + ""), new JsonResponseHandler()
-					{
-						@Override public void onFinish()
-						{
-							String responseTimestamp = getContent().getAsJsonObject().get("headers").getAsJsonObject().get("Timestamp").getAsString();
-
-							assertEquals("" + latest, responseTimestamp);
-							assertTrue(current != latest);
-
-							signal.countDown();
-						}
-					});
-				}
-				else
-				{
-					Assert.fail();
-					signal.countDown();
-				}
-			}
-		});
-
-		signal.await(60, TimeUnit.SECONDS);
+			Assert.fail();
+		}
 	}
 }
