@@ -245,7 +245,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 
 				try
 				{
-					if (this.response != null && contentLength > 0 && !isCancelled())
+					if (this.response != null && !isCancelled())
 					{
 						this.response.onReceiveStream(responseStream, this, contentLength);
 						this.response.generateContent();

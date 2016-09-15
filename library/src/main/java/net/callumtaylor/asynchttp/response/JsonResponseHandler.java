@@ -1,6 +1,7 @@
 package net.callumtaylor.asynchttp.response;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonParser;
 
 import java.io.IOException;
@@ -28,6 +29,11 @@ public class JsonResponseHandler extends StreamResponseHandler<JsonElement>
 		catch (IOException e)
 		{
 			e.printStackTrace();
+		}
+
+		if (this.content == JsonNull.INSTANCE)
+		{
+			this.content = null;
 		}
 	}
 
