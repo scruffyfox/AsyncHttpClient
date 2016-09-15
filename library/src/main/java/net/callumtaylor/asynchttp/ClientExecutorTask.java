@@ -1,7 +1,6 @@
 package net.callumtaylor.asynchttp;
 
 import android.net.Uri;
-import android.support.annotation.Nullable;
 
 import net.callumtaylor.asynchttp.obj.ClientTaskImpl;
 import net.callumtaylor.asynchttp.obj.CountingRequestBody;
@@ -52,8 +51,6 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 	protected Cache cache;
 	protected AtomicBoolean cancelled = new AtomicBoolean(false);
 
-	private static OkHttpClient httpClient = null;
-
 	public ClientExecutorTask(RequestMode mode, Uri request, Headers headers, RequestBody postData, ResponseHandler response, boolean allowRedirect, boolean allowAllSsl, long requestTimeout, Cache cache)
 	{
 		this.response = response;
@@ -65,25 +62,6 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 		this.allowAllSsl = allowAllSsl;
 		this.allowRedirect = allowRedirect;
 		this.cache = cache;
-
-		if (httpClient == null)
-		{
-			httpClient = new OkHttpClient()
-				.newBuilder()
-				.followRedirects(allowRedirect)
-				.followSslRedirects(allowRedirect)
-				.connectTimeout(requestTimeout, TimeUnit.MILLISECONDS)
-				.writeTimeout(requestTimeout, TimeUnit.MILLISECONDS)
-				.readTimeout(requestTimeout, TimeUnit.MILLISECONDS)
-				.build();
-
-			if (cache != null)
-			{
-				httpClient = httpClient.newBuilder()
-					.cache(cache)
-					.build();
-			}
-		}
 	}
 
 	@Override public boolean isCancelled()
@@ -110,6 +88,16 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 
 	@Override public F executeTask()
 	{
+		OkHttpClient httpClient = new OkHttpClient()
+			.newBuilder()
+			.followRedirects(allowRedirect)
+			.followSslRedirects(allowRedirect)
+			.connectTimeout(requestTimeout, TimeUnit.MILLISECONDS)
+			.writeTimeout(requestTimeout, TimeUnit.MILLISECONDS)
+			.readTimeout(requestTimeout, TimeUnit.MILLISECONDS)
+			.cache(cache)
+			.build();
+
 		if (allowAllSsl)
 		{
 			try
@@ -257,7 +245,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 
 				try
 				{
-					if (this.response != null && contentLength != 0 && !isCancelled())
+					if (this.response != null && contentLength > 0 && !isCancelled())
 					{
 						this.response.onReceiveStream(responseStream, this, contentLength);
 						this.response.generateContent();
