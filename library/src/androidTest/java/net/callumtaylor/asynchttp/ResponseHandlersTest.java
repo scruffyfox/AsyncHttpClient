@@ -8,6 +8,7 @@ import com.google.gson.annotations.SerializedName;
 import junit.framework.Assert;
 
 import net.callumtaylor.asynchttp.response.BitmapResponseHandler;
+import net.callumtaylor.asynchttp.response.ByteArrayResponseHandler;
 import net.callumtaylor.asynchttp.response.GsonResponseHandler;
 import net.callumtaylor.asynchttp.response.JsonResponseHandler;
 
@@ -119,6 +120,39 @@ public class ResponseHandlersTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
+	}
+
+	/**
+	 * Tests null response for byte response handler
+	 * @throws InterruptedException
+	 */
+	public void testGetNullBytes() throws InterruptedException
+	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
+		new AsyncHttpClient("http://httpbin.org/")
+			.get("status/404", new ByteArrayResponseHandler()
+			{
+				@Override public void onFinish()
+				{
+					Assert.assertNull(getContent());
+					Assert.assertEquals(404, getConnectionInfo().responseCode);
+
+					signal.countDown();
+				}
+			});
+
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 }
