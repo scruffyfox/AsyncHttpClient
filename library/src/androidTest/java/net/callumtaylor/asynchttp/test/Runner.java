@@ -5,6 +5,7 @@ import android.test.InstrumentationTestSuite;
 
 import junit.framework.TestSuite;
 
+import net.callumtaylor.asynchttp.AsyncCacheTest;
 import net.callumtaylor.asynchttp.AsyncDeleteTest;
 import net.callumtaylor.asynchttp.AsyncGetTest;
 import net.callumtaylor.asynchttp.AsyncPatchTest;
@@ -12,6 +13,7 @@ import net.callumtaylor.asynchttp.AsyncPostTest;
 import net.callumtaylor.asynchttp.AsyncPutTest;
 import net.callumtaylor.asynchttp.OptionsTest;
 import net.callumtaylor.asynchttp.ResponseHandlersTest;
+import net.callumtaylor.asynchttp.SyncCacheTest;
 import net.callumtaylor.asynchttp.SyncDeleteTest;
 import net.callumtaylor.asynchttp.SyncGetTest;
 import net.callumtaylor.asynchttp.SyncPatchTest;
@@ -28,12 +30,14 @@ public class Runner extends InstrumentationTestRunner
 	{
 		InstrumentationTestSuite suite = new InstrumentationTestSuite(this);
 
+		suite.addTestSuite(AsyncCacheTest.class);
 		suite.addTestSuite(AsyncGetTest.class);
 		suite.addTestSuite(AsyncPostTest.class);
 		suite.addTestSuite(AsyncPutTest.class);
 		suite.addTestSuite(AsyncDeleteTest.class);
 		suite.addTestSuite(AsyncPatchTest.class);
 
+		suite.addTestSuite(SyncCacheTest.class);
 		suite.addTestSuite(SyncGetTest.class);
 		suite.addTestSuite(SyncPostTest.class);
 		suite.addTestSuite(SyncPutTest.class);
