@@ -32,7 +32,11 @@ public class BitmapResponseHandler extends ResponseHandler<Bitmap>
 	 */
 	@Override public void generateContent()
 	{
-		this.bitmap = BitmapFactory.decodeByteArray(byteBuffer.toByteArray(), 0, byteBuffer.size(), null);
+		if (byteBuffer.size() > 0)
+		{
+			this.bitmap = BitmapFactory.decodeByteArray(byteBuffer.toByteArray(), 0, byteBuffer.size(), null);
+		}
+
 		this.byteBuffer = null;
 	}
 

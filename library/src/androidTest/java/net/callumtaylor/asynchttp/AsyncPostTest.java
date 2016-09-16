@@ -24,8 +24,6 @@ import okhttp3.RequestBody;
  */
 public class AsyncPostTest extends AndroidTestCase
 {
-	final CountDownLatch signal = new CountDownLatch(1);
-
 	@Override protected void setUp() throws Exception
 	{
 		super.setUp();
@@ -37,6 +35,8 @@ public class AsyncPostTest extends AndroidTestCase
 	 */
 	public void testPost() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.post("post", new JsonResponseHandler()
 			{
@@ -48,7 +48,12 @@ public class AsyncPostTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -57,6 +62,8 @@ public class AsyncPostTest extends AndroidTestCase
 	 */
 	public void testPostProgress() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		byte[] postData = new byte[16384];
 		for (int index = 0; index < postData.length; index++)
 		{
@@ -89,7 +96,12 @@ public class AsyncPostTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -98,6 +110,8 @@ public class AsyncPostTest extends AndroidTestCase
 	 */
 	public void testPostStream() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		// Simulate an input stream
 		InputStream is = new ByteArrayInputStream("hello world".getBytes());
 
@@ -127,7 +141,12 @@ public class AsyncPostTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -136,6 +155,8 @@ public class AsyncPostTest extends AndroidTestCase
 	 */
 	public void testPostJson() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		RequestBody postBody = RequestBody.create(MediaType.parse("application/json"), "{\"test\":\"hello world\"}");
 
 		new AsyncHttpClient("http://httpbin.org/")
@@ -150,7 +171,12 @@ public class AsyncPostTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -159,6 +185,8 @@ public class AsyncPostTest extends AndroidTestCase
 	 */
 	public void testGet404() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.post("status/404", new JsonResponseHandler()
 			{
@@ -171,7 +199,12 @@ public class AsyncPostTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -180,6 +213,8 @@ public class AsyncPostTest extends AndroidTestCase
 	 */
 	public void testPostSslJson() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		RequestBody postBody = RequestBody.create(MediaType.parse("application/json"), "{\"test\":\"hello world\"}");
 
 		new AsyncHttpClient("https://httpbin.org/")
@@ -194,7 +229,12 @@ public class AsyncPostTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -203,6 +243,8 @@ public class AsyncPostTest extends AndroidTestCase
 	 */
 	public void testPostRedirectJson() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
 		client.setAllowRedirect(true);
 		client.post("status/302", new JsonResponseHandler()
@@ -217,7 +259,12 @@ public class AsyncPostTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -226,6 +273,8 @@ public class AsyncPostTest extends AndroidTestCase
 	 */
 	public void testPostNoRedirect() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
 		client.setAllowRedirect(false);
 		client.post("status/302", new BasicResponseHandler()
@@ -238,6 +287,11 @@ public class AsyncPostTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 }
