@@ -8,6 +8,7 @@ import com.google.gson.annotations.SerializedName;
 import junit.framework.Assert;
 
 import net.callumtaylor.asynchttp.response.BitmapResponseHandler;
+import net.callumtaylor.asynchttp.response.ByteArrayResponseHandler;
 import net.callumtaylor.asynchttp.response.GsonResponseHandler;
 import net.callumtaylor.asynchttp.response.JsonResponseHandler;
 
@@ -19,8 +20,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class ResponseHandlersTest extends AndroidTestCase
 {
-	final CountDownLatch signal = new CountDownLatch(1);
-
 	@Override protected void setUp() throws Exception
 	{
 		super.setUp();
@@ -45,6 +44,8 @@ public class ResponseHandlersTest extends AndroidTestCase
 	 */
 	public void testGsonResponseHandler() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("get", new GsonResponseHandler<HttpBinResponse>(HttpBinResponse.class)
 			{
@@ -66,7 +67,12 @@ public class ResponseHandlersTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -75,6 +81,8 @@ public class ResponseHandlersTest extends AndroidTestCase
 	 */
 	public void testJsonResponseHandler() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		new AsyncHttpClient("http://httpbin.org/")
 			.get("get", new JsonResponseHandler()
 			{
@@ -97,7 +105,12 @@ public class ResponseHandlersTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -106,6 +119,8 @@ public class ResponseHandlersTest extends AndroidTestCase
 	 */
 	public void testGetBitmapResponse() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+		
 		AsyncHttpClient client = new AsyncHttpClient("http://httpbin.org/");
 		client.setAllowAllSsl(true);
 		client.get("/image/png", new BitmapResponseHandler()
@@ -119,6 +134,39 @@ public class ResponseHandlersTest extends AndroidTestCase
 			}
 		});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
+	}
+
+	/**
+	 * Tests null response for byte response handler
+	 * @throws InterruptedException
+	 */
+	public void testGetNullBytes() throws InterruptedException
+	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
+		new AsyncHttpClient("http://httpbin.org/")
+			.get("status/404", new ByteArrayResponseHandler()
+			{
+				@Override public void onFinish()
+				{
+					Assert.assertNull(getContent());
+					Assert.assertEquals(404, getConnectionInfo().responseCode);
+
+					signal.countDown();
+				}
+			});
+
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 }

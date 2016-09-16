@@ -25,6 +25,7 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import okhttp3.Cache;
 import okhttp3.Call;
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
@@ -47,9 +48,10 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 	protected boolean allowRedirect = true;
 	protected boolean allowAllSsl = false;
 	protected long requestTimeout = 0L;
+	protected Cache cache;
 	protected AtomicBoolean cancelled = new AtomicBoolean(false);
 
-	public ClientExecutorTask(RequestMode mode, Uri request, Headers headers, RequestBody postData, ResponseHandler response, boolean allowRedirect, boolean allowAllSsl, long requestTimeout)
+	public ClientExecutorTask(RequestMode mode, Uri request, Headers headers, RequestBody postData, ResponseHandler response, boolean allowRedirect, boolean allowAllSsl, long requestTimeout, Cache cache)
 	{
 		this.response = response;
 		this.requestUri = request;
@@ -59,6 +61,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 		this.requestTimeout = requestTimeout;
 		this.allowAllSsl = allowAllSsl;
 		this.allowRedirect = allowRedirect;
+		this.cache = cache;
 	}
 
 	@Override public boolean isCancelled()
@@ -85,14 +88,14 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 
 	@Override public F executeTask()
 	{
-		OkHttpClient httpClient;
-
-		httpClient = new OkHttpClient()
+		OkHttpClient httpClient = new OkHttpClient()
 			.newBuilder()
 			.followRedirects(allowRedirect)
 			.followSslRedirects(allowRedirect)
 			.connectTimeout(requestTimeout, TimeUnit.MILLISECONDS)
+			.writeTimeout(requestTimeout, TimeUnit.MILLISECONDS)
 			.readTimeout(requestTimeout, TimeUnit.MILLISECONDS)
+			.cache(cache)
 			.build();
 
 		if (allowAllSsl)
@@ -242,7 +245,7 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 
 				try
 				{
-					if (this.response != null && contentLength != 0 && !isCancelled())
+					if (this.response != null && !isCancelled())
 					{
 						this.response.onReceiveStream(responseStream, this, contentLength);
 						this.response.generateContent();
@@ -288,7 +291,14 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 			}
 		}
 
-		return (F)this.response.getContent();
+		if (this.response != null)
+		{
+			return (F)this.response.getContent();
+		}
+		else
+		{
+			return null;
+		}
 	}
 
 	@Override public void postExecute()

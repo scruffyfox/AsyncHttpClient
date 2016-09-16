@@ -26,7 +26,11 @@ public class ByteArrayResponseHandler extends ResponseHandler<byte[]>
 	 */
 	@Override public void generateContent()
 	{
-		this.bytes = byteBuffer.toByteArray();
+		if (byteBuffer.size() > 0)
+		{
+			this.bytes = byteBuffer.toByteArray();
+		}
+
 		this.byteBuffer = null;
 	}
 

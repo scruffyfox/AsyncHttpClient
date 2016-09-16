@@ -21,8 +21,6 @@ import okhttp3.Headers;
  */
 public class OptionsTest extends AndroidTestCase
 {
-	final CountDownLatch signal = new CountDownLatch(1);
-
 	@Override protected void setUp() throws Exception
 	{
 		super.setUp();
@@ -48,6 +46,8 @@ public class OptionsTest extends AndroidTestCase
 	 */
 	public void testAsyncCustomUserAgent() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		AsyncHttpClient.userAgent = "custom-user-agent";
 
 		new AsyncHttpClient("http://httpbin.org/")
@@ -62,7 +62,12 @@ public class OptionsTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -85,6 +90,8 @@ public class OptionsTest extends AndroidTestCase
 	 */
 	public void testAsyncHeaders() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		Headers headers = Headers.of("Header", "value");
 
 		new AsyncHttpClient("http://httpbin.org/")
@@ -99,7 +106,12 @@ public class OptionsTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 
 	/**
@@ -123,6 +135,8 @@ public class OptionsTest extends AndroidTestCase
 	 */
 	public void testAsyncParams() throws InterruptedException
 	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
 		List<NameValuePair> params = new ArrayList<>();
 		params.add(new NameValuePair("key", "value"));
 
@@ -138,6 +152,11 @@ public class OptionsTest extends AndroidTestCase
 				}
 			});
 
-		signal.await(1500, TimeUnit.MILLISECONDS);
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
 	}
 }
