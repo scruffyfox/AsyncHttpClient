@@ -7,6 +7,8 @@ import net.callumtaylor.asynchttp.obj.Response
 import net.callumtaylor.asynchttp.processor.ResponseProcessor
 import okhttp3.OkHttpClient
 import java.io.BufferedInputStream
+import java.io.InputStream
+import java.lang.Exception
 import java.util.concurrent.TimeUnit
 
 class AsyncHttpClient(
@@ -48,8 +50,10 @@ class AsyncHttpClient(
 		private val timeout: Long = 0,
 		private val processor: ResponseProcessor<T>,
 		private val response: (response: Response<T>) -> Unit
-	) : AsyncTask<Void, Void, Response<T>>()
+	) : AsyncTask<Void, Long, Response<T>>()
 	{
+		private lateinit var responseStream: InputStream
+
 		override fun doInBackground(vararg params: Void): Response<T>
 		{
 			var httpClient = OkHttpClient().newBuilder()
@@ -70,14 +74,33 @@ class AsyncHttpClient(
 			val response = Response<T>(request = request)
 
 			httpResponse.body()?.let {
+				responseStream = BufferedInputStream(it.byteStream(), BUFFER_SIZE)
+
 				val contentLength = httpResponse.body()?.contentLength() ?: 0
-				val responseBody = processor.processStream(BufferedInputStream(it.byteStream(), BUFFER_SIZE), contentLength)
+				val responseBody = processor.processStream(responseStream, contentLength, { length, total ->
+					publishProgress(length, total)
+				})
 
 				response.body = responseBody
 				response.length = contentLength
 			}
 
 			return response
+		}
+
+		override fun onCancelled()
+		{
+			try
+			{
+				// force close the stream
+				responseStream.close()
+			}
+			catch (e: Exception){}
+		}
+
+		override fun onProgressUpdate(vararg values: Long?)
+		{
+			processor.onChunkProcessed(request, values[0] ?: 0, values[1] ?: 0)
 		}
 
 		override fun onPostExecute(result: Response<T>)
