@@ -13,6 +13,7 @@ import java.security.KeyManagementException
 import java.security.NoSuchAlgorithmException
 import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
+import java.util.zip.GZIPInputStream
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
@@ -22,6 +23,8 @@ class AsyncHttpClient(
 	private var timeout: Long = 0
 )
 {
+	private lateinit var networkTask: AsyncHttpClient.ExecutorTask<*>
+
 	companion object
 	{
 		public var BUFFER_SIZE: Int = 8192
@@ -31,19 +34,30 @@ class AsyncHttpClient(
 
 	fun <T> get(
 		request: Request? = null,
-		processor: ResponseProcessor<T>,
+		processor: ResponseProcessor<T>? = null,
 		response: (response: Response<T>) -> Unit
 	)
 	{
 		var request = process(request ?: Request())
-		ExecutorTask(
+		request.type = "GET"
+
+		networkTask = ExecutorTask<T>(
 			request = request,
 			timeout = timeout,
 			processor = processor,
-			response = response
-		).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+			responseCallback = response
+		)
+		networkTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 	}
 
+	fun cancel()
+	{
+		networkTask.cancel(true)
+	}
+
+	/**
+	 * Processes the base request into a usable request object by the network task
+	 */
 	private fun process(request: Request): Request
 	{
 		// ensure request is built
@@ -54,11 +68,18 @@ class AsyncHttpClient(
 	class ExecutorTask<T>(
 		private val request: Request,
 		private val timeout: Long = 0,
-		private val processor: ResponseProcessor<T>,
-		private val response: (response: Response<T>) -> Unit
+		private val processor: ResponseProcessor<T>?,
+		private val responseCallback: (response: Response<T>) -> Unit
 	) : AsyncTask<Void, Long, Response<T>>()
 	{
 		private lateinit var responseStream: InputStream
+		private val response = Response<T>(request = request)
+
+		override fun onPreExecute()
+		{
+			request.time = System.currentTimeMillis()
+			processor?.onRequest()
+		}
 
 		override fun doInBackground(vararg params: Void): Response<T>
 		{
@@ -107,22 +128,44 @@ class AsyncHttpClient(
 			var httpRequest: okhttp3.Request.Builder = okhttp3.Request.Builder()
 				.url(request.path)
 
-			httpRequest = httpRequest.get()
+			httpRequest = when (request.type) {
+//				"POST" -> httpRequest.post(),
+				"GET" -> httpRequest.get()
+				else -> httpRequest.method(request.type, null/*, request.body*/)
+			}
+
+			request.headers.forEach { header ->
+				httpRequest.addHeader(header.first, header.second)
+			}
+
 			val httpCall = httpClient.newCall(httpRequest.build())
 			val httpResponse = httpCall.execute()
-			val response = Response<T>(request = request)
 
 			httpResponse.body()?.let {
+				val encoding = httpResponse.header("Content-Encoding", "")
+
 				responseStream = BufferedInputStream(it.byteStream(), BUFFER_SIZE)
+				if (encoding == "gzip")
+				{
+					responseStream = GZIPInputStream(responseStream)
+				}
 
 				val contentLength = httpResponse.body()?.contentLength() ?: 0
-				val responseBody = processor.processStream(responseStream, contentLength, { length, total ->
+				val responseBody = processor?.processStream(responseStream, contentLength, { length, total ->
 					publishProgress(length, total)
 				})
 
 				response.body = responseBody
 				response.length = contentLength
 			}
+
+			for (index in 0 until httpResponse.headers().size())
+			{
+				response.headers.add(Pair(httpResponse.headers().name(index), httpResponse.headers()[httpResponse.headers().name(index)] ?: ""))
+			}
+
+			response.time = System.currentTimeMillis()
+			response.code = httpResponse.code()
 
 			return response
 		}
@@ -133,18 +176,21 @@ class AsyncHttpClient(
 			{
 				// force close the stream
 				responseStream.close()
+				response.code = 0
 			}
 			catch (e: Exception){}
+
+			responseCallback.invoke(response)
 		}
 
 		override fun onProgressUpdate(vararg values: Long?)
 		{
-			processor.onChunkProcessed(request, values[0] ?: 0, values[1] ?: 0)
+			processor?.onChunkProcessed(request, values[0] ?: 0, values[1] ?: 0)
 		}
 
 		override fun onPostExecute(result: Response<T>)
 		{
-			response.invoke(result)
+			responseCallback.invoke(result)
 		}
 	}
 }
