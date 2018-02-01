@@ -1,17 +1,18 @@
 package net.callumtaylor.asynchttp.processor
 
 import net.callumtaylor.asynchttp.AsyncHttpClient
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 
 /**
  * // TODO: Add class description
  */
-open class StringProcessor : ResponseProcessor<String>()
+open class ByteProcessor : ResponseProcessor<ByteArray>()
 {
-	override fun processStream(inputStream: InputStream, contentLength: Long, progressCallback: (Long, Long) -> Unit): String
+	override fun processStream(inputStream: InputStream, contentLength: Long, progressCallback: (Long, Long) -> Unit): ByteArray
 	{
 		val buffer = ByteArray(AsyncHttpClient.BUFFER_SIZE)
-		val string = StringBuffer()
+		val out = ByteArrayOutputStream()
 
 		var len = 0
 		var readCount = 0L
@@ -25,7 +26,7 @@ open class StringProcessor : ResponseProcessor<String>()
 					progressCallback(readCount, contentLength)
 					readCount += len
 
-					string.append(String(buffer, 0, len))
+					out.write(buffer, 0, len)
 				}
 			}
 
@@ -35,6 +36,6 @@ open class StringProcessor : ResponseProcessor<String>()
 
 		progressCallback(readCount, readCount)
 
-		return string.toString()
+		return out.toByteArray()
 	}
 }
