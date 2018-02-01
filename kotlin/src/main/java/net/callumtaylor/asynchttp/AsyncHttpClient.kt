@@ -9,7 +9,13 @@ import okhttp3.OkHttpClient
 import java.io.BufferedInputStream
 import java.io.InputStream
 import java.lang.Exception
+import java.security.KeyManagementException
+import java.security.NoSuchAlgorithmException
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 class AsyncHttpClient(
 	private var baseUri: Uri = Uri.EMPTY,
@@ -64,6 +70,39 @@ class AsyncHttpClient(
 				.readTimeout(timeout, TimeUnit.MILLISECONDS)
 //				.cache(cache)
 				.build()
+
+			if (request.allowAllSSl)
+			{
+				try
+				{
+					// Create a trust manager that does not validate certificate chains
+					val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager
+					{
+						@Throws(java.security.cert.CertificateException::class)
+						override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String){}
+						@Throws(java.security.cert.CertificateException::class)
+						override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String){}
+						override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate>? = arrayOf()
+					})
+
+					val sslContext = SSLContext.getInstance("SSL")
+					sslContext.init(null, trustAllCerts, java.security.SecureRandom())
+					val sslSocketFactory = sslContext.socketFactory
+
+					httpClient = httpClient.newBuilder()
+						.sslSocketFactory(sslSocketFactory)
+						.hostnameVerifier { hostname, session -> true }
+						.build()
+				}
+				catch (e: NoSuchAlgorithmException)
+				{
+					e.printStackTrace()
+				}
+				catch (e: KeyManagementException)
+				{
+					e.printStackTrace()
+				}
+			}
 
 			var httpRequest: okhttp3.Request.Builder = okhttp3.Request.Builder()
 				.url(request.path)
