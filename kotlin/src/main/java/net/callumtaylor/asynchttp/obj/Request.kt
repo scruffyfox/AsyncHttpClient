@@ -1,15 +1,13 @@
 package net.callumtaylor.asynchttp.obj
 
-import android.util.Pair
-import okhttp3.Headers
-
 /**
  * // TODO: Add class description
  */
 data class Request(
 	var path: String = "",
-	var queryParams: List<Pair<String, String>>? = null,
-	var headers: Headers? = null,
+	var queryParams: ArrayList<kotlin.Pair<String, String>> = arrayListOf(),
+	var headers: ArrayList<kotlin.Pair<String, String>> = arrayListOf(),
+	var type: String = "GET",
 
 	var followRedirects: Boolean = true,
 	var allowAllSSl: Boolean = false,
