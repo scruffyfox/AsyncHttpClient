@@ -2,10 +2,12 @@ package net.callumtaylor.asynchttp
 
 import android.net.Uri
 import android.os.AsyncTask
+import net.callumtaylor.asynchttp.obj.CountingRequestBody
 import net.callumtaylor.asynchttp.obj.Request
 import net.callumtaylor.asynchttp.obj.Response
 import net.callumtaylor.asynchttp.processor.ResponseProcessor
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody
 import java.io.BufferedInputStream
 import java.io.InputStream
 import java.lang.Exception
@@ -32,6 +34,12 @@ class AsyncHttpClient(
 
 	constructor(baseUrl: String, timeout: Long = 0) : this(Uri.parse(baseUrl), timeout)
 
+	/**
+	 * Performs a http GET request
+	 * @param request The request object to be made
+	 * @param processor The response body processor
+	 * @param response The response callback
+	 */
 	fun <T> get(
 		request: Request? = null,
 		processor: ResponseProcessor<T>? = null,
@@ -50,6 +58,33 @@ class AsyncHttpClient(
 		networkTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 	}
 
+	/**
+	 * Performs a http POST request. Post body should be part of [request]
+	 * @param request The request object to be made
+	 * @param processor The response body processor
+	 * @param response The response callback
+	 */
+	fun <T> post(
+		request: Request? = null,
+		processor: ResponseProcessor<T>? = null,
+		response: (response: Response<T>) -> Unit
+	)
+	{
+		var request = process(request ?: Request())
+		request.type = "POST"
+
+		networkTask = ExecutorTask<T>(
+			request = request,
+			timeout = timeout,
+			processor = processor,
+			responseCallback = response
+		)
+		networkTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+	}
+
+	/**
+	 * Cancels the pending request
+	 */
 	fun cancel()
 	{
 		networkTask.cancel(true)
@@ -134,10 +169,17 @@ class AsyncHttpClient(
 			var httpRequest: okhttp3.Request.Builder = okhttp3.Request.Builder()
 				.url(request.path)
 
+			request.body = request.body ?: RequestBody.create(null, ByteArray(0))
+			request.body = CountingRequestBody(request.body!!, { buffer, bufferCount, bytesWritten, contentLength ->
+				publishProgress(REQUEST_UPSTREAM, bytesWritten, contentLength)
+			})
+
 			httpRequest = when (request.type) {
-//				"POST" -> httpRequest.post(),
+				"POST" -> {
+					httpRequest.post(request.body)
+				}
 				"GET" -> httpRequest.get()
-				else -> httpRequest.method(request.type, null/*, request.body*/)
+				else -> httpRequest.method(request.type, request.body)
 			}
 
 			request.headers.forEach { header ->
