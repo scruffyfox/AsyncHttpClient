@@ -72,6 +72,12 @@ class AsyncHttpClient(
 		private val responseCallback: (response: Response<T>) -> Unit
 	) : AsyncTask<Void, Long, Response<T>>()
 	{
+		companion object
+		{
+			const val REQUEST_DOWNSTREAM = 0L;
+			const val REQUEST_UPSTREAM = 1L;
+		}
+
 		private lateinit var responseStream: InputStream
 		private val response = Response<T>(request = request)
 
@@ -152,7 +158,7 @@ class AsyncHttpClient(
 
 				val contentLength = httpResponse.body()?.contentLength() ?: 0
 				val responseBody = processor?.processStream(responseStream, contentLength, { length, total ->
-					publishProgress(length, total)
+					publishProgress(REQUEST_DOWNSTREAM, length, total)
 				})
 
 				response.body = responseBody
@@ -185,7 +191,11 @@ class AsyncHttpClient(
 
 		override fun onProgressUpdate(vararg values: Long?)
 		{
-			processor?.onChunkProcessed(request, values[0] ?: 0, values[1] ?: 0)
+			when (values[0])
+			{
+				REQUEST_DOWNSTREAM -> processor?.onChunkReceived(request, values[1] ?: 0, values[2] ?: 0)
+				REQUEST_UPSTREAM -> processor?.onChunkSent(request, values[1] ?: 0, values[2] ?: 0)
+			}
 		}
 
 		override fun onPostExecute(result: Response<T>)

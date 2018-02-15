@@ -14,7 +14,10 @@ abstract class ResponseProcessor<out T>
 	open fun onRequest(){}
 
 	@UiThread
-	open fun onChunkProcessed(request: Request, length: Long, total: Long){}
+	open fun onChunkReceived(request: Request, length: Long, total: Long){}
+
+	@UiThread
+	open fun onChunkSent(request: Request, length: Long, total: Long){}
 
 	@WorkerThread
 	abstract fun processStream(inputStream: InputStream, contentLength: Long, progressCallback: (Long, Long) -> Unit): T

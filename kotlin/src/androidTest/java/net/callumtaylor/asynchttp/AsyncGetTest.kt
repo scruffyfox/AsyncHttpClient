@@ -1,9 +1,9 @@
 package net.callumtaylor.asynchttp
 
 import android.support.test.runner.AndroidJUnit4
-import junit.framework.Assert
 import net.callumtaylor.asynchttp.obj.Request
 import net.callumtaylor.asynchttp.processor.ByteProcessor
+import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
@@ -27,7 +27,7 @@ class AsyncGetTest
 			client.get<ByteArray>(
 				processor = object : ByteProcessor()
 				{
-					override fun onChunkProcessed(request: Request, length: Long, total: Long)
+					override fun onChunkReceived(request: Request, length: Long, total: Long)
 					{
 						if (length > 1024)
 						{
