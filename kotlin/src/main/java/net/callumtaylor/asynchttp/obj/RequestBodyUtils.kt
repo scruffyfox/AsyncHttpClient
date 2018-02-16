@@ -13,20 +13,42 @@ import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
 
+/**
+ * Adds one multipart body to another
+ */
 operator fun MultipartBody.plus(other: MultipartBody): MultipartBody
 {
 	return MultipartBody.Builder().also { builder ->
 		this@plus.parts().forEach { part ->
 			builder.addPart(part)
 		}
+
+		other.parts().forEach { part ->
+			builder.addPart(part)
+		}
 	}
-	.addPart(other)
 	.build()
 }
 
+/**
+ * Converts a json element to standard request body
+ */
 fun JsonElement.toRequestBody(): RequestBody = RequestBody.create(MediaType.parse("application/json"), toString())
+
+/**
+ * Creates a json body from a json string
+ */
 fun String.asJsonBody(): RequestBody = RequestBody.create(MediaType.parse("application/json"), this)
+
+/**
+ * Converts a string to a text/plain request body
+ */
 fun String.toRequestBody(): RequestBody = RequestBody.create(MediaType.parse("text/plain"), this)
+
+/**
+ * Converts a file to request body using input stream.
+ * @param formName optional form field name, providing this will add as a form data part instead of standard part
+ */
 fun File.toRequestBody(formName: String? = null): MultipartBody
 {
 	return MultipartBody.Builder().also { builder ->
@@ -41,6 +63,10 @@ fun File.toRequestBody(formName: String? = null): MultipartBody
 	}.build();
 }
 
+/**
+ * Converts an input stream to request body
+ * @param mediaType optional media type, defaults to application/octet-stream
+ */
 fun InputStream.toRequestBody(mediaType: MediaType? = MediaType.parse("application/octet-stream")): RequestBody
 {
 	return object : RequestBody()
