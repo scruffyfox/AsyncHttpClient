@@ -20,7 +20,7 @@ android {
 }
 
 dependencies {
-	testCompile 'junit:junit:4.12'
+	testImplementation 'junit:junit:4.12'
 
 	androidTestCompile('com.android.support.test.espresso:espresso-core:3.0.1', {
 		exclude group: 'com.android.support', module: 'support-annotations'

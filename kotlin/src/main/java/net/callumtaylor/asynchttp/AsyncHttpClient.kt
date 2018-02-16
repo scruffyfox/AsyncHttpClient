@@ -6,6 +6,7 @@ import net.callumtaylor.asynchttp.obj.CountingRequestBody
 import net.callumtaylor.asynchttp.obj.Request
 import net.callumtaylor.asynchttp.obj.Response
 import net.callumtaylor.asynchttp.processor.ResponseProcessor
+import net.callumtaylor.asynchttp.processor.StringProcessor
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import java.io.BufferedInputStream
@@ -30,9 +31,59 @@ class AsyncHttpClient(
 	companion object
 	{
 		public var BUFFER_SIZE: Int = 8192
+		public var OKHTTP_CLIENT = OkHttpClient().newBuilder().build()
 	}
 
 	constructor(baseUrl: String, timeout: Long = 0) : this(Uri.parse(baseUrl), timeout)
+
+	/**
+	 * Performs a http request with default String response body. Request type should be defined in the [request] param
+	 * @param request The request object to be made
+	 * @param response The response callback
+	 */
+	fun request(
+		request: Request? = null,
+		response: (response: Response<String>) -> Unit
+	)
+	{
+		get(request, StringProcessor(), response)
+	}
+
+	/**
+	 * Performs a http request. Request type should be defined in the [request] param
+	 * @param request The request object to be made
+	 * @param processor The response body processor
+	 * @param response The response callback
+	 */
+	fun <T> request(
+		request: Request? = null,
+		processor: ResponseProcessor<T>? = null,
+		response: (response: Response<T>) -> Unit
+	)
+	{
+		var request = process(request ?: Request())
+
+		networkTask = ExecutorTask<T>(
+			request = request,
+			timeout = timeout,
+			processor = processor,
+			responseCallback = response
+		)
+		networkTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+	}
+
+	/**
+	 *  Performs a http GET request with default String response body.
+	 * @param request The request object to be made
+	 * @param response The response callback
+	 */
+	fun get(
+		request: Request? = null,
+		response: (response: Response<String>) -> Unit
+	)
+	{
+		get(request, StringProcessor(), response)
+	}
 
 	/**
 	 * Performs a http GET request
@@ -59,6 +110,19 @@ class AsyncHttpClient(
 	}
 
 	/**
+	 * Performs a http POST request with default String response body. Post body should be part of [request]
+	 * @param request The request object to be made
+	 * @param response The response callback
+	 */
+	fun post(
+		request: Request? = null,
+		response: (response: Response<String>) -> Unit
+	)
+	{
+		post(request, StringProcessor(), response)
+	}
+
+	/**
 	 * Performs a http POST request. Post body should be part of [request]
 	 * @param request The request object to be made
 	 * @param processor The response body processor
@@ -72,6 +136,80 @@ class AsyncHttpClient(
 	{
 		var request = process(request ?: Request())
 		request.type = "POST"
+
+		networkTask = ExecutorTask<T>(
+			request = request,
+			timeout = timeout,
+			processor = processor,
+			responseCallback = response
+		)
+		networkTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+	}
+
+	/**
+	 * Performs a http DELETE request with default String response body. Delete body should be part of [request]
+	 * @param request The request object to be made
+	 * @param response The response callback
+	 */
+	fun delete(
+		request: Request? = null,
+		response: (response: Response<String>) -> Unit
+	)
+	{
+		delete(request, StringProcessor(), response)
+	}
+
+	/**
+	 * Performs a http DELETE request. Delete body should be part of [request]
+	 * @param request The request object to be made
+	 * @param processor The response body processor
+	 * @param response The response callback
+	 */
+	fun <T> delete(
+		request: Request? = null,
+		processor: ResponseProcessor<T>? = null,
+		response: (response: Response<T>) -> Unit
+	)
+	{
+		var request = process(request ?: Request())
+		request.type = "DELETE"
+
+		networkTask = ExecutorTask<T>(
+			request = request,
+			timeout = timeout,
+			processor = processor,
+			responseCallback = response
+		)
+		networkTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+	}
+
+	/**
+	 * Performs a http PUT request with default String response body. Put body should be part of [request]
+	 * @param request The request object to be made
+	 * @param response The response callback
+	 */
+	fun put(
+		request: Request? = null,
+		response: (response: Response<String>) -> Unit
+	)
+	{
+		put(request, StringProcessor(), response)
+	}
+
+	/**
+	 * Performs a http PUT request. Put body should be part of [request]
+	 * @param request The request object to be made
+	 * @param processor The response body processor
+	 * @param response The response callback
+	 */
+	fun <T> put(
+		request: Request? = null,
+		processor: ResponseProcessor<T>? = null,
+		response: (response: Response<T>) -> Unit
+	)
+	{
+		var request = process(request ?: Request())
+		request.type = "PUT"
 
 		networkTask = ExecutorTask<T>(
 			request = request,
@@ -124,14 +262,17 @@ class AsyncHttpClient(
 
 		override fun doInBackground(vararg params: Void): Response<T>
 		{
-			var httpClient = OkHttpClient().newBuilder()
-				.followRedirects(request.followRedirects)
-				.followSslRedirects(request.followRedirects)
-				.connectTimeout(timeout, TimeUnit.MILLISECONDS)
-				.writeTimeout(timeout, TimeUnit.MILLISECONDS)
-				.readTimeout(timeout, TimeUnit.MILLISECONDS)
-//				.cache(cache)
-				.build()
+			var httpClient = OKHTTP_CLIENT.newBuilder().also { builder ->
+				builder.followRedirects(request.followRedirects)
+				builder.followSslRedirects(request.followRedirects)
+
+				if (timeout != 0L)
+				{
+					builder.connectTimeout(timeout, TimeUnit.MILLISECONDS)
+					builder.writeTimeout(timeout, TimeUnit.MILLISECONDS)
+					builder.readTimeout(timeout, TimeUnit.MILLISECONDS)
+				}
+			}.build()
 
 			if (request.allowAllSSl)
 			{
@@ -175,17 +316,19 @@ class AsyncHttpClient(
 			})
 
 			httpRequest = when (request.type) {
-				"POST" -> {
-					httpRequest.post(request.body)
-				}
+				"POST" -> httpRequest.post(request.body!!)
+				"PUT" -> httpRequest.put(request.body!!)
+				"DELETE" -> httpRequest.delete(request.body)
 				"GET" -> httpRequest.get()
 				else -> httpRequest.method(request.type, request.body)
 			}
 
+			httpRequest.addHeader("Connection", "close")
 			request.headers.forEach { header ->
 				httpRequest.addHeader(header.first, header.second)
 			}
 
+			request.length = (request.body as CountingRequestBody).contentLength()
 			val httpCall = httpClient.newCall(httpRequest.build())
 			val httpResponse = httpCall.execute()
 
