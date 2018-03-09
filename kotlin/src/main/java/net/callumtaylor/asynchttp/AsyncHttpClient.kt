@@ -7,6 +7,7 @@ import net.callumtaylor.asynchttp.obj.Request
 import net.callumtaylor.asynchttp.obj.Response
 import net.callumtaylor.asynchttp.processor.ResponseProcessor
 import net.callumtaylor.asynchttp.processor.StringProcessor
+import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import java.io.BufferedInputStream
@@ -18,7 +19,6 @@ import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
 import java.util.zip.GZIPInputStream
 import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
 class AsyncHttpClient(
@@ -279,7 +279,7 @@ class AsyncHttpClient(
 				try
 				{
 					// Create a trust manager that does not validate certificate chains
-					val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager
+					val trustAllCerts = arrayOf<X509TrustManager>(object : X509TrustManager
 					{
 						@Throws(java.security.cert.CertificateException::class)
 						override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String){}
@@ -293,7 +293,19 @@ class AsyncHttpClient(
 					val sslSocketFactory = sslContext.socketFactory
 
 					httpClient = httpClient.newBuilder()
-						.sslSocketFactory(sslSocketFactory)
+						.connectionSpecs(arrayListOf(
+							ConnectionSpec.Builder(ConnectionSpec.COMPATIBLE_TLS)
+								.allEnabledCipherSuites()
+								.allEnabledTlsVersions()
+								.supportsTlsExtensions(true)
+								.build(),
+							ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+								.allEnabledCipherSuites()
+								.allEnabledTlsVersions()
+								.supportsTlsExtensions(true)
+								.build()
+						))
+						.sslSocketFactory(sslSocketFactory, trustAllCerts[0])
 						.hostnameVerifier { hostname, session -> true }
 						.build()
 				}
