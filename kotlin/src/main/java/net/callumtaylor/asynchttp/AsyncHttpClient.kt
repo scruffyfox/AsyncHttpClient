@@ -336,39 +336,49 @@ class AsyncHttpClient(
 			}
 
 			httpRequest.addHeader("Connection", "close")
-			request.headers.forEach { header ->
-				httpRequest.addHeader(header.first, header.second)
+			for (entry in request.headers)
+			{
+				httpRequest.addHeader(entry.key, entry.value)
 			}
 
 			request.length = (request.body as CountingRequestBody).contentLength()
 			val httpCall = httpClient.newCall(httpRequest.build())
-			val httpResponse = httpCall.execute()
 
-			httpResponse.body()?.let {
-				val encoding = httpResponse.header("Content-Encoding", "")
+			try
+			{
+				val httpResponse = httpCall.execute()
+				httpResponse.body()?.let {
+					val encoding = httpResponse.header("Content-Encoding", "")
 
-				responseStream = BufferedInputStream(it.byteStream(), BUFFER_SIZE)
-				if (encoding == "gzip")
-				{
-					responseStream = GZIPInputStream(responseStream)
+					responseStream = BufferedInputStream(it.byteStream(), BUFFER_SIZE)
+					if (encoding == "gzip")
+					{
+						responseStream = GZIPInputStream(responseStream)
+					}
+
+					val contentLength = httpResponse.body()?.contentLength() ?: 0
+					val responseBody = processor?.processStream(responseStream, contentLength, { length, total ->
+						publishProgress(REQUEST_DOWNSTREAM, length, total)
+					})
+
+					response.body = responseBody
+					response.length = contentLength
 				}
 
-				val contentLength = httpResponse.body()?.contentLength() ?: 0
-				val responseBody = processor?.processStream(responseStream, contentLength, { length, total ->
-					publishProgress(REQUEST_DOWNSTREAM, length, total)
-				})
+				for (index in 0 until httpResponse.headers().size())
+				{
+					response.headers[httpResponse.headers().name(index)] = httpResponse.headers()[httpResponse.headers().name(index)] ?: ""
+				}
 
-				response.body = responseBody
-				response.length = contentLength
+				response.code = httpResponse.code()
 			}
-
-			for (index in 0 until httpResponse.headers().size())
+			catch (e: Exception)
 			{
-				response.headers.add(Pair(httpResponse.headers().name(index), httpResponse.headers()[httpResponse.headers().name(index)] ?: ""))
+				e.printStackTrace()
+				response.code = 0
 			}
 
 			response.time = System.currentTimeMillis()
-			response.code = httpResponse.code()
 
 			return response
 		}

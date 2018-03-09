@@ -7,16 +7,17 @@ import okhttp3.RequestBody
  */
 data class Request(
 	var path: String = "",
-	var queryParams: ArrayList<kotlin.Pair<String, String>> = arrayListOf(),
-	var headers: ArrayList<kotlin.Pair<String, String>> = arrayListOf(),
+	var queryParams: MutableMap<String, String> = mutableMapOf(),
+	var headers: MutableMap<String, String> = mutableMapOf(),
 	var body: RequestBody? = null,
 	var type: String = "",
 
 	// request options
 	var followRedirects: Boolean = true,
-	var allowAllSSl: Boolean = false,
-
-	// request params populated by request
-	var time: Long = 0,
-	var length: Long = 0
+	var allowAllSSl: Boolean = false
 )
+{
+	// request params populated by request
+	var time: Long = 0
+	var length: Long = 0
+}
