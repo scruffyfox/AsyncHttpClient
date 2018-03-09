@@ -233,8 +233,15 @@ class AsyncHttpClient(
 	 */
 	private fun process(request: Request): Request
 	{
-		// ensure request is built
-		request.path = baseUri.toString() + request.path
+		var requestUri: Uri = baseUri
+
+		if (request.path.isNotEmpty())
+		{
+			requestUri = Uri.withAppendedPath(baseUri, request.path)
+		}
+
+		request.path = requestUri.toString()
+
 		return request
 	}
 
@@ -319,8 +326,20 @@ class AsyncHttpClient(
 				}
 			}
 
+			var requestUri: Uri = Uri.parse(request.path)
+			if (request.queryParams.isNotEmpty())
+			{
+				val builder = requestUri.buildUpon()
+				for (p in request.queryParams)
+				{
+					builder.appendQueryParameter(p.key, p.value)
+				}
+
+				requestUri = builder.build()
+			}
+
 			var httpRequest: okhttp3.Request.Builder = okhttp3.Request.Builder()
-				.url(request.path)
+				.url(requestUri.toString())
 
 			request.body = request.body ?: RequestBody.create(null, ByteArray(0))
 			request.body = CountingRequestBody(request.body!!, { buffer, bufferCount, bytesWritten, contentLength ->
