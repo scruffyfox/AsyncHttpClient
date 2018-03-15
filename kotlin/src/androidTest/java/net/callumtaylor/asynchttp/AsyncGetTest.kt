@@ -1,6 +1,7 @@
 package net.callumtaylor.asynchttp
 
 import android.net.Uri
+import android.os.Looper
 import android.support.test.runner.AndroidJUnit4
 import com.google.gson.JsonElement
 import net.callumtaylor.TestHelper
@@ -289,6 +290,49 @@ class AsyncGetTest
 						Assert.assertEquals(0, response.code)
 						Assert.assertEquals(0, response.length)
 						Assert.assertTrue(response.time - response.request.time < 5000L)
+
+						TestHelper.stopLatch(latch)
+					}
+				)
+
+			TestHelper.beginLatch(latch)
+		}
+	}
+
+	/**
+	 * Tests request progress increments correctly
+	 */
+	@Test
+	fun testGetProgress()
+	{
+		TestHelper.createAsyncLatch().also { latch ->
+			AsyncHttpClient(Uri.parse("https://httpbin.org"))
+				.get(
+					request = Request(
+						path = "bytes/16384"
+					),
+					processor = object : ByteProcessor()
+					{
+						var lastLen = -1L
+
+						override fun onChunkReceived(request: Request, length: Long, total: Long)
+						{
+							// check UI Thread
+							Assert.assertTrue(Looper.getMainLooper().thread == Thread.currentThread())
+
+							if (length < total)
+							{
+								Assert.assertTrue(length > lastLen)
+								lastLen = length
+							}
+						}
+					},
+					response = { response ->
+						Assert.assertNotNull(response)
+
+						Assert.assertNotNull(response.body)
+						Assert.assertEquals(200, response.code)
+						Assert.assertEquals(16384, response.length)
 
 						TestHelper.stopLatch(latch)
 					}
