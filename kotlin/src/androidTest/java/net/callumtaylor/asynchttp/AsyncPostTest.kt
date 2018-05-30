@@ -1,8 +1,11 @@
 package net.callumtaylor.asynchttp
 
 import android.support.test.runner.AndroidJUnit4
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import net.callumtaylor.asynchttp.obj.Request
-import net.callumtaylor.asynchttp.processor.ByteProcessor
+import net.callumtaylor.asynchttp.obj.asJsonBody
+import net.callumtaylor.asynchttp.processor.JsonProcessor
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -19,31 +22,24 @@ class AsyncPostTest
 	 * Tests basic post request
 	 */
 	@Test
-	fun testPost()
+	fun testJsonPost()
 	{
 		val signal = CountDownLatch(1)
+		val bodyStr = "{\"key\": \"value\"}"
 
-		AsyncHttpClient("https://httpbin.org/stream-bytes/16384").let { client ->
-			client.post<ByteArray>(
+		AsyncHttpClient("https://httpbin.org/post").let { client ->
+			client.post<JsonElement>(
 				request = Request(
-
+					body = bodyStr.asJsonBody()
 				),
-				processor = object : ByteProcessor()
-				{
-					override fun onChunkReceived(request: Request, length: Long, total: Long)
-					{
-						if (length > 1024)
-						{
-							client.cancel()
-						}
-					}
-				},
+				processor = JsonProcessor(),
 				response = { response ->
-					// cancel code = 0
-					Assert.assertEquals(0, response.code)
+					Assert.assertEquals(200, response.code)
 
-					// read count < 16384
-					Assert.assertTrue(response.length < 16384)
+					val body = response.body as JsonObject
+					Assert.assertEquals(body.get("json").asJsonObject.toString(), bodyStr)
+					Assert.assertEquals(body.get("headers").asJsonObject.get("Content-Type"), "application/json")
+					Assert.assertEquals(response.headers["Content-Type"], "application/json")
 
 					signal.countDown()
 				}
