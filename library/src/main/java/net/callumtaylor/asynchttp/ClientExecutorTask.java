@@ -1,11 +1,13 @@
 package net.callumtaylor.asynchttp;
 
 import android.net.Uri;
+import android.os.Build;
 
 import net.callumtaylor.asynchttp.obj.ClientTaskImpl;
 import net.callumtaylor.asynchttp.obj.CountingRequestBody;
 import net.callumtaylor.asynchttp.obj.Packet;
 import net.callumtaylor.asynchttp.obj.RequestMode;
+import net.callumtaylor.asynchttp.obj.TLSSocketFactory;
 import net.callumtaylor.asynchttp.response.ResponseHandler;
 
 import java.io.BufferedInputStream;
@@ -97,6 +99,24 @@ public class ClientExecutorTask<F> implements ClientTaskImpl<F>
 			.readTimeout(requestTimeout, TimeUnit.MILLISECONDS)
 			.cache(cache)
 			.build();
+
+		if (Build.VERSION.SDK_INT >= 16 && Build.VERSION.SDK_INT < 22)
+		{
+			try
+			{
+				httpClient = httpClient.newBuilder()
+					.sslSocketFactory(new TLSSocketFactory())
+					.build();
+			}
+			catch (KeyManagementException e)
+			{
+				e.printStackTrace();
+			}
+			catch (NoSuchAlgorithmException e)
+			{
+				e.printStackTrace();
+			}
+		}
 
 		if (allowAllSsl)
 		{
