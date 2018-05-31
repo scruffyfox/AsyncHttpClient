@@ -55,6 +55,33 @@ public class AsyncGetTest extends AndroidTestCase
 	}
 
 	/**
+	 * Tests a basic GET request for tls v1.1
+	 * @throws InterruptedException
+	 */
+	public void testTlsV1_1() throws InterruptedException
+	{
+		final CountDownLatch signal = new CountDownLatch(1);
+
+		new AsyncHttpClient("https://tls-v1-1.badssl.com:1011/")
+			.get(new StringResponseHandler()
+			{
+				@Override public void onFinish()
+				{
+					Assert.assertNotNull(getContent());
+
+					signal.countDown();
+				}
+			});
+
+		signal.await(60, TimeUnit.SECONDS);
+
+		if (signal.getCount() != 0)
+		{
+			Assert.fail();
+		}
+	}
+
+	/**
 	 * Tests the response handler publish methods are called in chunks
 	 * @throws InterruptedException
 	 */

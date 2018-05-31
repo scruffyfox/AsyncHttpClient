@@ -1,6 +1,6 @@
-#AsyncHttpClient Example PUT
+# AsyncHttpClient Example PUT
 
-###Example PUT - Single Entity
+### Example PUT - Single Entity
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
@@ -13,7 +13,7 @@
 	});
 ```
 
-###Example PUT - Headers & Params
+### Example PUT - Headers & Params
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
@@ -32,7 +32,7 @@
 	});
 ```
 
-###Example PUT - Single Entity
+### Example PUT - Single Entity
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
@@ -48,7 +48,7 @@
 	});
 ```
 
-###Example PUT - Multiple entity + file
+### Example PUT - Multiple entity + file
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");

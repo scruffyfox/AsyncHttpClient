@@ -1,6 +1,6 @@
-#AsyncHttpClient Example DELETE
+# AsyncHttpClient Example DELETE
 
-###Example DELETE
+### Example DELETE
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
@@ -13,7 +13,7 @@
 	});
 ```
 
-###Example DELETE with parameters and headers
+### Example DELETE with parameters and headers
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
