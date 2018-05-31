@@ -1,8 +1,8 @@
-#AsyncHttpClient Example Custom Processor
+# AsyncHttpClient Example Custom Processor
 
 Here is an example custom processor. It's important to remember that you'll be dealing with a buffer of bytes when the response is being read, so you need to make sure to read it into the appropriate format. In this example, because we know the response is going to be JSON, we read the response into a `StringBuffer` and then parse the json after the total amount has been read from the stream.
 
-###Example custom processor
+### Example custom processor
 
 ```java
 SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");

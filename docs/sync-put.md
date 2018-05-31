@@ -1,13 +1,13 @@
-#AsyncHttpClient Example PUT
+# AsyncHttpClient Example PUT
 
-###Example PUT
+### Example PUT
 
 ```java
 	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");
 	JsonElement response = client.put("api/v1/", new JsonResponseHandler());
 ```
 
-###Example PUT - Single Entity
+### Example PUT - Single Entity
 
 ```java
 	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");
@@ -17,7 +17,7 @@
 	JsonElement response = client.put("api/v1/", putBody, new JsonResponseHandler());
 ```
 
-###Example PUT - Multiple Entity + file
+### Example PUT - Multiple Entity + file
 
 ```java
 	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");

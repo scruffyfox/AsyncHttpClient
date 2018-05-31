@@ -1,13 +1,13 @@
-#AsyncHttpClient Example DELETE
+# AsyncHttpClient Example DELETE
 
-###Example DELETE
+### Example DELETE
 
 ```java
 	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");
 	JsonElement response = client.delete("api/v1/", new JsonResponseHandler());
 ```
 
-###Example DELETE with parameters and headers
+### Example DELETE with parameters and headers
 
 ```java
 	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");

@@ -1,13 +1,13 @@
-#AsyncHttpClient Example GET
+# AsyncHttpClient Example GET
 
-###Example GET
+### Example GET
 
 ```java
 	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");
 	JsonElement response = client.get("api/v1/", new JsonResponseHandler());
 ```
 
-###Example GET with parameters and headers
+### Example GET with parameters and headers
 
 ```java
 	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");

@@ -1,13 +1,13 @@
-#AsyncHttpClient Example POST
+# AsyncHttpClient Example POST
 
-###Example POST
+### Example POST
 
 ```java
 	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");
 	JsonElement response = client.post("api/v1/", new JsonResponseHandler());
 ```
 
-###Example POST - Single Entity
+### Example POST - Single Entity
 
 ```java
 	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");
@@ -17,7 +17,7 @@
 	JsonElement response = client.post("api/v1/", postBody, new JsonResponseHandler());
 ```
 
-###Example POST - Multiple Entity + file
+### Example POST - Multiple Entity + file
 
 ```java
 	SyncHttpClient<JsonElement> client = new SyncHttpClient<JsonElement>("http://example.com");

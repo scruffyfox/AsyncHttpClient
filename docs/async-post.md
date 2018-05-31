@@ -1,6 +1,6 @@
-#AsyncHttpClient Example POST
+# AsyncHttpClient Example POST
 
-###Example POST - Single Entity
+### Example POST - Single Entity
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
@@ -13,7 +13,7 @@
 	});
 ```
 
-###Example POST - Headers & Params
+### Example POST - Headers & Params
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
@@ -32,7 +32,7 @@
 	});
 ```
 
-###Example POST - Single Entity
+### Example POST - Single Entity
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
@@ -48,7 +48,7 @@
 	});
 ```
 
-###Example POST - Multiple entity + file
+### Example POST - Multiple entity + file
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
