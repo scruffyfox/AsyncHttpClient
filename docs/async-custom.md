@@ -1,8 +1,8 @@
-#AsyncHttpClient Example Custom Handler
+# AsyncHttpClient Example Custom Handler
 
 Here is an example custom response handler. It's important to remember that you'll be dealing with a buffer of bytes when the response is being read, so you need to make sure to read it into the appropriate format. In this example, because we know the response is going to be JSON, we read the response into a `StringBuffer` and then parse the json after the total amount has been read from the stream.
 
-###Example custom handler
+### Example custom handler
 
 ```java
 AsyncHttpClient client = new AyncHttpClient("http://example.com");

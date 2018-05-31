@@ -1,6 +1,6 @@
-#AsyncHttpClient Example GET
+# AsyncHttpClient Example GET
 
-###Example GET
+### Example GET
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
@@ -13,7 +13,7 @@
 	});
 ```
 
-###Example GET with parameters and headers
+### Example GET with parameters and headers
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
@@ -32,7 +32,7 @@
 	});
 ```
 
-###Example GET - Downloading a large file directly to cache
+### Example GET - Downloading a large file directly to cache
 
 ```java
 	AsyncHttpClient client = new AsyncHttpClient("http://example.com");
